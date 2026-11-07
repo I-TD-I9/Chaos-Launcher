@@ -2,7 +2,7 @@
 
     python tools/make_icon.py
 
-writes src/BattleCity.Launcher/Assets/BattleCity.ico, 16 to 256 pixels. Needs Pillow. The drawing
+writes src/Chaos.Launcher/Assets/ChaosLauncher.ico, 16 to 256 pixels. Needs Pillow. The drawing
 is made here from plain shapes, so the repository holds no artwork it would need a licence for.
 The small sizes are drawn on their own, with a bigger dial and heavier lines, so that they still
 read as a clock.
@@ -13,7 +13,7 @@ import os
 from PIL import Image, ImageDraw
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-ASSETS = os.path.join(ROOT, 'src', 'BattleCity.Launcher', 'Assets')
+ASSETS = os.path.join(ROOT, 'src', 'Chaos.Launcher', 'Assets')
 
 SCALE = 8                       # each size is drawn this many times larger, then scaled down
 
@@ -163,9 +163,9 @@ def main():
     os.makedirs(ASSETS, exist_ok=True)
     sizes = (16, 24, 32, 48, 64, 128, 256)
     pictures = [draw(size, SMALL if size < 48 else BIG) for size in sizes]
-    pictures[-1].save(os.path.join(ASSETS, 'BattleCity.ico'), sizes=[(s, s) for s in sizes],
+    pictures[-1].save(os.path.join(ASSETS, 'ChaosLauncher.ico'), sizes=[(s, s) for s in sizes],
                       append_images=pictures[:-1])
-    print('wrote', os.path.join(ASSETS, 'BattleCity.ico'))
+    print('wrote', os.path.join(ASSETS, 'ChaosLauncher.ico'))
 
 
 if __name__ == '__main__':

@@ -21,14 +21,14 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/I-TD-I9/Battle-City-Launcher/releases/latest"><img src="docs/download.png" height="65" alt="Download for Windows"></a>
+  <a href="https://github.com/I-TD-I9/Chaos-Launcher/releases/latest"><img src="docs/download.png" height="65" alt="Download for Windows"></a>
 </p>
 
 ## Getting started
 
 1. You need Windows 10 or 11, 64-bit, and Yu-Gi-Oh! ONLINE, the February 2006 version
    (`Ver.060110.00`), unpacked anywhere. The launcher never changes your game folder.
-2. [Download Chaos Launcher](https://github.com/I-TD-I9/Battle-City-Launcher/releases/latest) and run
+2. [Download Chaos Launcher](https://github.com/I-TD-I9/Chaos-Launcher/releases/latest) and run
    it. If Windows says it doesn't recognise the app, click **More info**, then **Run anyway**.
 3. Click **Change…** and pick your game folder.
 4. Make your account under **Account**. You'll get a code by email to finish it.
@@ -57,7 +57,7 @@
 With the .NET 10 SDK on Windows:
 
 ```
-dotnet publish src/BattleCity.Launcher -c Release -o publish
+dotnet publish src/Chaos.Launcher -c Release -o publish
 ```
 
 The first build downloads [cnc-ddraw](https://github.com/FunkyFr3sh/cnc-ddraw), which the launcher

@@ -18,7 +18,7 @@ jobs:
           dotnet-version: 10.0.x
       # The tests that need the game's own client are skipped here: it cannot be in the repository.
       - run: dotnet test -c Release
-      - run: dotnet publish src/BattleCity.Launcher -c Release -o publish
+      - run: dotnet publish src/Chaos.Launcher -c Release -o publish
       - uses: actions/upload-artifact@v7
         with:
           name: ChaosLauncher

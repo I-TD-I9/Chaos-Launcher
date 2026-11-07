@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Everything the launcher does that is not a window: finding and checking the game, patching
+       a copy of its client, setting up how it is shown, signing up, and asking whether the server
+       is up. -->
+  <PropertyGroup>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <RootNamespace>Chaos</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Chaos.Core.Tests" />
+  </ItemGroup>
+
+  <Import Project="CncDdraw.targets" />
+
+</Project>

@@ -23,7 +23,7 @@ jobs:
       - name: Publish
         shell: pwsh
         run: |
-          dotnet publish src/BattleCity.Launcher -c Release -o publish -p:Version=$($env:TAG.TrimStart('v'))
+          dotnet publish src/Chaos.Launcher -c Release -o publish -p:Version=$($env:TAG.TrimStart('v'))
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           $hash = (Get-FileHash publish/ChaosLauncher.exe -Algorithm SHA256).Hash.ToLowerInvariant()
           "$hash  ChaosLauncher.exe" | Out-File -Encoding ascii publish/ChaosLauncher.exe.sha256
