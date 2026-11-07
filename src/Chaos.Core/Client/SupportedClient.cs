@@ -18,9 +18,9 @@ public static class SupportedClient
     /// The same file patched for <see cref="ServerEndpoints.Public"/>: the gate's host name
     /// replaced, the registry read from HKEY_CURRENT_USER, the updater's copy jumped over, a
     /// recordless card's activation accepted, the display wrapper loaded first, the card lists
-    /// extended to the cards past Konami's release, and the PE checksum written, 950 bytes in all.
+    /// extended to the cards past Konami's release, and the PE checksum written, 956 bytes in all.
     /// </summary>
-    public const string PublicSha256 = "54c789cab87a97c8ef96fb99a4a9a87df2fd3662dc4293153c78ccd554dfd781";
+    public const string PublicSha256 = "f67fe4b18658b293bde28efa104a6f68082c699ef3834bf46dbb2477aa248560";
 
     /// <summary>Whether the file at <paramref name="path"/> is the supported client.</summary>
     public static bool IsSupported(string path) =>

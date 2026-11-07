@@ -269,7 +269,7 @@ public class ClientPatcherTests
         Assert.Equal(SupportedClient.Sha256, SupportedClient.HashOf(retail));
         var patched = ClientPatcher.Patch(retail, ServerEndpoints.Public);
         Assert.Equal(SupportedClient.PublicSha256, SupportedClient.HashOf(patched));
-        Assert.Equal(950, retail.Zip(patched).Count(pair => pair.First != pair.Second));
+        Assert.Equal(956, retail.Zip(patched).Count(pair => pair.First != pair.Second));
         Assert.Equal(patched, ClientPatcher.Patch(patched, ServerEndpoints.Public));
     }
 

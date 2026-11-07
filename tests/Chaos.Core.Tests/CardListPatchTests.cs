@@ -32,8 +32,8 @@ public class CardListPatchTests
     public void The_table_encodes_to_the_bytes_the_client_reads()
     {
         Assert.Equal(Convert.ToHexStringLower(TableBytes), Convert.ToHexStringLower(CardListTable.EncodeTable()));
-        Assert.Equal(568, TableBytes.Length);
-        Assert.Equal(141, CardListTable.Entries.Count);
+        Assert.Equal(576, TableBytes.Length);
+        Assert.Equal(143, CardListTable.Entries.Count);
     }
 
     [Fact]
@@ -160,7 +160,7 @@ public class CardListPatchTests
     [InlineData(0x178)]
     [InlineData(0x180)]
     [InlineData(0x1C0)]
-    [InlineData(0x3F7)]
+    [InlineData(0x3FF)]
     public void Anything_but_zeros_where_the_routine_and_tables_go_is_refused(int at)
     {
         var image = TestImage.Build();
@@ -206,8 +206,8 @@ public class CardListPatchTests
     }
 
     [Theory]
-    [InlineData(0xB98u, 0xB98u)]
-    [InlineData(0xB97u, 0x1000u)]
+    [InlineData(0xBA0u, 0xBA0u)]
+    [InlineData(0xB9Fu, 0x1000u)]
     [InlineData(0xFF0u, 0xFF0u)]
     public void Text_keeps_a_size_that_covers_the_table_and_gets_one_that_does_not(uint before, uint after)
     {
@@ -237,8 +237,8 @@ public class CardListPatchTests
         foreach (var (place, bytes) in TestImage.ListSites)
             Assert.Equal(bytes, retail.Read(place, bytes.Length).ToArray());
         Assert.All(retail.Read(StubVa, TestImage.CardCaveLength).ToArray(), b => Assert.Equal(0, b));
-        Assert.Equal(TestImage.CardCaveLength, 0x6ECB98 - 0x6EC7A0);
-        Assert.True(0x6ECB98 <= ClientPatcher.WrapperStubVa);
+        Assert.Equal(TestImage.CardCaveLength, 0x6ECBA0 - 0x6EC7A0);
+        Assert.True(0x6ECBA0 <= ClientPatcher.WrapperStubVa);
     }
 
     [RetailClientFact]
@@ -296,7 +296,7 @@ public class CardListPatchTests
         ffffffff0fffffffffffffffffffffff
         """);
 
-    // The 141 cards and the terminator: 568 bytes, from 0x6ec960.
+    // The 143 cards and the terminator: 576 bytes, from 0x6ec960.
     static readonly byte[] TableBytes = Hex("""
         4b0701008a070400040808001008010057080100590801006008010063086000730801007a0801007b0801007d080100
         89080100940801009508010097080100a6080100a7080100ab080100ad080100af080100b0080100b2080100ba080100
@@ -307,8 +307,8 @@ public class CardListPatchTests
         760a0100770a01008a0a01008f0a0100900a01009c0a0100a00a0020a90a0100b00a0100b60a0100bd0a0100c10a0100
         c20a0100c30a0100c40a0100c50a0100c90a0100cb0a0100cc0a0100e60a0800e70a0900e80a0100f60a0100f70a0800
         fc0a0800fd0a0100fe0a0100000b0100090b01000c0b0100150b0100260b0900280b01002e0b0800300b0100310b0800
-        380b01003a0b01003d0b0100420b0100470b0100520b0100620b80037c0b01007d0b0100800b0100860b10048a0b0100
-        930b0800940b0800960b0800a90b0800b10b0900b30b8000b50b0040b70b0900b80b0800b90b0900ba0b0800bd0b0100
+        380b01003a0b01003d0b0100420b0100470b0100520b0100620b8003680b01007c0b01007d0b0100800b0100860b1004
+        8a0b0100930b0800940b0800950b0800960b0800a90b0800b10b0900b30b8000b50b0040b70b0900b80b0800b90b0900ba0b0800bd0b0100
         be0b0800ca0b0010cb0b0100d80b0900da0b0800e50b0100e80b0100f00b0040f30b0100ffff0000
         """);
 

@@ -60,7 +60,7 @@ static class TestImage
 
     /// <summary>Where the card lists' routine begins in the zeros of .text, and how far the routine, map and table reach.</summary>
     public const uint CardCaveVa = 0x6EC7A0;
-    public const int CardCaveLength = 0x3F8;
+    public const int CardCaveLength = 0x400;
     public static int CardCaveOffset => TextRaw + (int)(CardCaveVa - 0x400000 - TextRva);
 
     /// <summary>The file offset of the byte at <paramref name="va"/> in one of the card lists' sections.</summary>

@@ -225,6 +225,7 @@ public static class CardListTable
         (0x0B47, CardList.Act),                                       // B.E.S. Crystal Core
         (0x0B52, CardList.Act),                                       // D.D.M. - Different Dimension Master
         (0x0B62, CardList.Kind7 | CardList.Kind8 | CardList.Kind10),  // D.D. Trap Hole
+        (0x0B68, CardList.Act),                                       // Arcana Knight Joker
         (0x0B7C, CardList.Act),
         (0x0B7D, CardList.Act),
         (0x0B80, CardList.Act),
@@ -232,6 +233,7 @@ public static class CardListTable
         (0x0B8A, CardList.Act),
         (0x0B93, CardList.Proc),
         (0x0B94, CardList.Proc),
+        (0x0B95, CardList.Proc),                                      // Familiar-Possessed - Hiita
         (0x0B96, CardList.Proc),
         (0x0BA9, CardList.Proc),
         (0x0BB1, CardList.Act | CardList.Proc),
