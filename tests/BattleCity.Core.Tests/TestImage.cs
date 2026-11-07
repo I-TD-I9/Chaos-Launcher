@@ -8,8 +8,9 @@ namespace BattleCity.Tests;
 /// past the updater's copy at 0x4149a8, the registry root's push at 0x4a40db, the call that makes
 /// DirectDraw at 0x4db103, the activation check's jump at 0x5e2338 and the port's instruction at
 /// 0x67a9f2, each in a code section; the end of .text, which reaches 0x6ec792 in memory and
-/// 0x6ed000 on disk, the rest zeros; and the gate's host name in a data section at 0x71e064. The
-/// real client cannot be part of the repository.
+/// 0x6ed000 on disk, the rest zeros; the gate's host name in a data section at 0x71e064; and in
+/// four more code sections the eight places the card lists are extended from (<see cref="ListSites"/>).
+/// The real client cannot be part of the repository.
 /// </summary>
 static class TestImage
 {
@@ -21,7 +22,8 @@ static class TestImage
     public const int DirectDrawRaw = 0x4400;
     public const int ActivationRaw = 0x5400;
     public const int TextRaw = 0x6400;
-    public const int Length = 0x7400;
+    public const int ListsRaw = 0x7400;
+    public const int Length = 0xC400;
     public const uint UpdaterRva = 0x14000;
     public const uint RegistryRva = 0xA4000;
     public const uint CodeRva = 0x27A000;
@@ -29,6 +31,46 @@ static class TestImage
     public const uint DirectDrawRva = 0xDB000;
     public const uint ActivationRva = 0x1E2000;
     public const uint TextRva = 0x2EC000;
+
+    // The code sections that hold the card lists' places, each of whole pages: 0x59e000 to
+    // 0x5a0000, 0x5db000, 0x5bc000 and 0x5e5000, each 0x1000 long but the first.
+    static readonly (uint Rva, int Raw, int Size)[] ListSections =
+    [
+        (0x19E000, ListsRaw, 0x2000),
+        (0x1DB000, ListsRaw + 0x2000, 0x1000),
+        (0x1BC000, ListsRaw + 0x3000, 0x1000),
+        (0x1E5000, ListsRaw + 0x4000, 0x1000),
+    ];
+
+    /// <summary>
+    /// The client's bytes at the eight places the card lists jump from, by virtual address. They
+    /// are listed again here, from the client, apart from the patcher's own.
+    /// </summary>
+    public static readonly (uint Va, byte[] Bytes)[] ListSites =
+    [
+        (0x59EFE0, [0x56, 0x8B, 0x74, 0x24, 0x08]),
+        (0x59F460, [0x8B, 0x44, 0x24, 0x04, 0x50]),
+        (0x59E5A0, [0x8B, 0x44, 0x24, 0x04, 0x50]),
+        (0x59F510, [0x56, 0x8B, 0x74, 0x24, 0x08]),
+        (0x5DB110, [0x8B, 0x4C, 0x24, 0x0C, 0x56]),
+        (0x5BC863, [0x66, 0x8B, 0x17, 0x52, 0xE8, 0xE4, 0x58, 0xE4, 0xFF]),
+        (0x5E5355, [0x8B, 0x7C, 0x24, 0x1C, 0x57]),
+        (0x5E53FF, [0x3D, 0xF0, 0x05, 0x00, 0x00, 0x75, 0x47]),
+    ];
+
+    /// <summary>Where the card lists' routine begins in the zeros of .text, and how far the routine, map and table reach.</summary>
+    public const uint CardCaveVa = 0x6EC7A0;
+    public const int CardCaveLength = 0x3F8;
+    public static int CardCaveOffset => TextRaw + (int)(CardCaveVa - 0x400000 - TextRva);
+
+    /// <summary>The file offset of the byte at <paramref name="va"/> in one of the card lists' sections.</summary>
+    public static int ListOffset(uint va)
+    {
+        foreach (var (rva, raw, size) in ListSections)
+            if (va - 0x400000 >= rva && va - 0x400000 < rva + size)
+                return raw + (int)(va - 0x400000 - rva);
+        throw new ArgumentOutOfRangeException(nameof(va), $"0x{va:x} is in none of the card lists' sections");
+    }
 
     /// <summary>How far .text reaches in memory: to 0x6ec792, as in the client.</summary>
     public const uint TextVirtualSize = 0x792;
@@ -50,7 +92,8 @@ static class TestImage
     public static int StubOffset => TextRaw + (int)(StubVa - 0x400000 - TextRva);
     public static int ChecksumOffset => PeOffset + 24 + 64;
 
-    // The section table follows the optional header; .text is the last of its seven entries.
+    // The section table follows the optional header; .text is the seventh of its entries, and the
+    // card lists' sections come after it.
     static int SectionTable => PeOffset + 24 + 0xE0;
     public static int TextVirtualSizeOffset => SectionTable + 6 * 40 + 8;
 
@@ -62,7 +105,7 @@ static class TestImage
         BinaryPrimitives.WriteInt32LittleEndian(data.AsSpan(0x3C), PeOffset);
         BinaryPrimitives.WriteUInt32LittleEndian(data.AsSpan(PeOffset), 0x00004550);
         BinaryPrimitives.WriteUInt16LittleEndian(data.AsSpan(PeOffset + 4), 0x14C);
-        BinaryPrimitives.WriteUInt16LittleEndian(data.AsSpan(PeOffset + 6), 7);
+        BinaryPrimitives.WriteUInt16LittleEndian(data.AsSpan(PeOffset + 6), (ushort)(7 + ListSections.Length));
         BinaryPrimitives.WriteUInt16LittleEndian(data.AsSpan(PeOffset + 20), 0xE0);
         int optional = PeOffset + 24;
         BinaryPrimitives.WriteUInt16LittleEndian(data.AsSpan(optional), 0x10B);
@@ -77,6 +120,11 @@ static class TestImage
         Section(data, table + 200, ".text5", ActivationRva, 0x1000, ActivationRaw, 0x1000);
         // Smaller in memory than on disk, as the client's own .text is.
         Section(data, table + 240, ".text", TextRva, TextVirtualSize, TextRaw, 0x1000);
+        for (int i = 0; i < ListSections.Length; i++)
+        {
+            var (rva, raw, size) = ListSections[i];
+            Section(data, table + 280 + i * 40, $".list{i}", rva, (uint)size, raw, size);
+        }
 
         new byte[] { 0x75, 0x3D }.CopyTo(data, UpdaterOffset);
         new byte[] { 0x68, 0x02, 0x00, 0x00, 0x80 }.CopyTo(data, RegistryOffset);
@@ -86,6 +134,8 @@ static class TestImage
         BinaryPrimitives.WriteUInt16LittleEndian(data.AsSpan(PortOffset + 4), port);
         new byte[] { 0xFF, 0x15, 0xE0, 0xD3, 0x6E, 0x00 }.CopyTo(data, DirectDrawOffset);
         new byte[] { 0x0F, 0x84, 0x90, 0x00, 0x00, 0x00 }.CopyTo(data, ActivationOffset);
+        foreach (var (va, bytes) in ListSites)
+            bytes.CopyTo(data, ListOffset(va));
         // Code elsewhere, so that the checksum has more than zeros to add up, and up to where
         // .text ends in memory.
         for (int i = 0; i < 0x200; i++)

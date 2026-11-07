@@ -36,6 +36,7 @@ public class ClientPatcherTests
         var patched = ClientPatcher.Patch(retail, ServerEndpoints.Public);
         Assert.Equal(5730, PortIn(patched));
         static bool In(int i, int start, int count) => i >= start && i < start + count;
+        var listSites = TestImage.ListSites.Select(site => (Start: TestImage.ListOffset(site.Va), Count: site.Bytes.Length)).ToArray();
         for (int i = 0; i < retail.Length; i++)
         {
             bool slot = In(i, TestImage.HostOffset, 32);
@@ -45,8 +46,10 @@ public class ClientPatcherTests
             bool call = In(i, TestImage.DirectDrawOffset, 6);
             bool stub = In(i, TestImage.StubOffset, Stub.Length);
             bool size = In(i, TestImage.TextVirtualSizeOffset, 4);
+            bool lists = listSites.Any(site => In(i, site.Start, site.Count));
+            bool cave = In(i, TestImage.CardCaveOffset, TestImage.CardCaveLength);
             bool checksum = In(i, TestImage.ChecksumOffset, 4);
-            if (!slot && !root && !jump && !activation && !call && !stub && !size && !checksum)
+            if (!slot && !root && !jump && !activation && !call && !stub && !size && !lists && !cave && !checksum)
                 Assert.True(retail[i] == patched[i], $"byte 0x{i:x} changed");
         }
         Assert.Equal(TestImage.ReferenceChecksum(patched, TestImage.ChecksumOffset),
@@ -266,7 +269,7 @@ public class ClientPatcherTests
         Assert.Equal(SupportedClient.Sha256, SupportedClient.HashOf(retail));
         var patched = ClientPatcher.Patch(retail, ServerEndpoints.Public);
         Assert.Equal(SupportedClient.PublicSha256, SupportedClient.HashOf(patched));
-        Assert.Equal(65, retail.Zip(patched).Count(pair => pair.First != pair.Second));
+        Assert.Equal(950, retail.Zip(patched).Count(pair => pair.First != pair.Second));
         Assert.Equal(patched, ClientPatcher.Patch(patched, ServerEndpoints.Public));
     }
 

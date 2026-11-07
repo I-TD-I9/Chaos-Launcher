@@ -77,7 +77,8 @@ public static partial class ClientPatcher
     /// <summary>
     /// A copy of <paramref name="client"/> that connects to <paramref name="server"/>'s gate,
     /// keeps its saves where <see cref="Game.ClientKey"/> says, offers to activate the cards it
-    /// has no routines for, and loads a DirectDraw wrapper put beside it.
+    /// has no routines for, offers the effects and summons of the cards past Konami's release, and
+    /// loads a DirectDraw wrapper put beside it.
     /// </summary>
     public static byte[] Patch(ReadOnlySpan<byte> client, ServerEndpoints server)
     {
@@ -88,6 +89,7 @@ public static partial class ClientPatcher
         SkipUpdaterCopy(image);
         AcceptRecordlessActivation(image);
         LoadWrapperFirst(image);
+        ExtendCardLists(image);
         // The retail file leaves its checksum at zero; the copy gets the right one, as a valid
         // image has.
         image.UpdateChecksum();
@@ -165,13 +167,7 @@ public static partial class ClientPatcher
         // In memory .text ends at 0x6ec792, where its header's size, 0x2eb792, runs out; its bytes
         // on disk go on to 0x6ed000, the rest of them padding. Given its size on disk instead, the
         // section takes the stub in.
-        var text = image.SectionNamed(".text");
-        ulong start = (ulong)image.ImageBase + text.VirtualAddress;
-        ulong end = (ulong)WrapperStubVa + (uint)WrapperStub.Length;
-        if (WrapperStubVa < start || end > start + text.RawSize)
-            throw new PatchException($"the stub at 0x{WrapperStubVa:x} is not in the bytes of .text");
-        if (end > start + text.VirtualSize)
-            image.SetVirtualSize(".text", text.RawSize);
+        EnsureInText(image, WrapperStubVa, WrapperStub.Length);
 
         var call = image.Read(DirectDrawCallVa, CallCoCreateInstance.Length);
         if (call.SequenceEqual(CallWrapperStub))
@@ -179,6 +175,22 @@ public static partial class ClientPatcher
         if (!call.SequenceEqual(CallCoCreateInstance))
             throw new PatchException($"expected call [0x6ed3e0] at 0x{DirectDrawCallVa:x}, found {Convert.ToHexString(call)}");
         image.Write(DirectDrawCallVa, CallWrapperStub);
+    }
+
+    /// <summary>
+    /// Makes .text reach over the <paramref name="length"/> bytes at <paramref name="va"/>, which
+    /// must lie in the bytes it has on disk. Whichever step writes into the zeros at its end
+    /// first, it then reaches as far as the last of them.
+    /// </summary>
+    static void EnsureInText(PeImage image, uint va, int length)
+    {
+        var text = image.SectionNamed(".text");
+        ulong start = (ulong)image.ImageBase + text.VirtualAddress;
+        ulong end = (ulong)va + (uint)length;
+        if (va < start || end > start + text.RawSize)
+            throw new PatchException($"the {length} bytes at 0x{va:x} are not in the bytes of .text");
+        if (end > start + text.VirtualSize)
+            image.SetVirtualSize(".text", text.RawSize);
     }
 
     /// <summary>Whether <paramref name="name"/> is a host name or an IPv4 address.</summary>
