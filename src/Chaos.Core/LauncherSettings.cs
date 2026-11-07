@@ -7,11 +7,25 @@ namespace Chaos;
 /// <summary>What the launcher remembers between runs, kept as settings.json in its folder.</summary>
 public sealed class LauncherSettings
 {
-    /// <summary>The launcher's folder: its settings, and the patched client with cnc-ddraw beside it.</summary>
-    public static string Folder { get; } =
-        Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "BattleCity");
+    const string FolderName = "ChaosLauncher";
 
-    public static string DefaultPath { get; } = Path.Combine(Folder, "settings.json");
+    // The launcher's folder before it was called Chaos Launcher.
+    const string OldFolderName = "BattleCity";
+
+    /// <summary>The launcher's folder: its settings, and the patched client with cnc-ddraw beside it.</summary>
+    public static string Folder { get; private set; } = Path.Combine(LocalData, FolderName);
+
+    public static string DefaultPath => Path.Combine(Folder, "settings.json");
+
+    static string LocalData => Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+
+    /// <summary>
+    /// Brings the folder an earlier launcher made under its old name along, once, at start-up and
+    /// before anything reads <see cref="Folder"/>: the players' profiles and decks are in it.
+    /// When the move cannot be made, this run uses the old folder, and the next start tries again.
+    /// </summary>
+    public static void MoveOldFolder() =>
+        Folder = FolderMove.Adopt(Path.Combine(LocalData, OldFolderName), Path.Combine(LocalData, FolderName));
 
     // Lenient on reading, since the file is also edited by hand to try another server.
     static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web)

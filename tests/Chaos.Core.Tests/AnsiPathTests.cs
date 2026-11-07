@@ -14,7 +14,7 @@ public sealed class AnsiPathTests : IDisposable
 
     [Fact]
     public void Plain_paths_fit_the_ansi_code_page() =>
-        Assert.True(AnsiPath.Fits(@"C:\Users\Duelist\AppData\Local\BattleCity\Saves"));
+        Assert.True(AnsiPath.Fits(@"C:\Users\Duelist\AppData\Local\ChaosLauncher\Saves"));
 
     [Fact]
     public void A_path_no_ansi_code_page_can_spell_does_not_fit() =>

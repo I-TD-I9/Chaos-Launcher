@@ -31,10 +31,13 @@ public static class ClientKey
 
     public const string Release = "koe";
 
-    public static string SaveFolder { get; } = Path.Combine(LauncherSettings.Folder, "Saves");
+    public static string SaveFolder => Path.Combine(LauncherSettings.Folder, "Saves");
 
     /// <summary>The folder beside the game's that the saves go to when the client cannot open <see cref="SaveFolder"/>.</summary>
-    public const string Fallback = "Battle City saves";
+    public const string Fallback = "Chaos Launcher saves";
+
+    // What an earlier launcher called it.
+    const string OldFallback = "Battle City saves";
 
     /// <summary>
     /// Writes the key, CommonDir and Release, and makes the folder CommonDir names. Returns that
@@ -52,7 +55,8 @@ public static class ClientKey
         string? usable = AnsiPath.Folder(saveFolder, fits, shortName);
         if (usable is null && gameFolder is not null
             && Path.GetDirectoryName(Path.TrimEndingDirectorySeparator(gameFolder)) is { Length: > 0 } parent)
-            usable = AnsiPath.Folder(Path.Combine(parent, Fallback), fits, shortName);
+            usable = AnsiPath.Folder(FolderMove.Adopt(Path.Combine(parent, OldFallback), Path.Combine(parent, Fallback)),
+                                     fits, shortName);
         using var system = Registry.CurrentUser.CreateSubKey(key, writable: true);
         if (usable is null)
             system.DeleteValue("CommonDir", throwOnMissingValue: false);

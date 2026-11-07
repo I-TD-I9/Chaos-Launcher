@@ -8,6 +8,7 @@ public partial class App : Application
     protected override void OnStartup(StartupEventArgs e)
     {
         DispatcherUnhandledException += ShowAndCarryOn;
+        LauncherSettings.MoveOldFolder();
         base.OnStartup(e);
     }
 

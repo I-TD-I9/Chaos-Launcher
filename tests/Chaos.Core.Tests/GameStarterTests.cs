@@ -52,10 +52,10 @@ public class GameStarterTests
     [Fact]
     public void The_client_starts_by_its_folders_form_the_code_page_can_spell()
     {
-        const string Long = @"C:\Users\Дмитрий\AppData\Local\BattleCity";
-        var info = GameStarter.StartInfo(Long + @"\online_pc.exe", Working, Resolution.FullScreen, @"C:\Users\8D0B~1\AppData\Local\BATTLE~1");
-        Assert.Equal(@"C:\Users\8D0B~1\AppData\Local\BATTLE~1\online_pc.exe", info.FileName);
-        Assert.Equal(@"C:\Users\8D0B~1\AppData\Local\BATTLE~1\ddraw.ini", info.Environment[CncDdraw.ConfigFileVariable]);
+        const string Long = @"C:\Users\Дмитрий\AppData\Local\ChaosLauncher";
+        var info = GameStarter.StartInfo(Long + @"\online_pc.exe", Working, Resolution.FullScreen, @"C:\Users\8D0B~1\AppData\Local\CHAOSL~1");
+        Assert.Equal(@"C:\Users\8D0B~1\AppData\Local\CHAOSL~1\online_pc.exe", info.FileName);
+        Assert.Equal(@"C:\Users\8D0B~1\AppData\Local\CHAOSL~1\ddraw.ini", info.Environment[CncDdraw.ConfigFileVariable]);
     }
 
     [Theory]

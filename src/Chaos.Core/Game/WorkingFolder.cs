@@ -26,7 +26,7 @@ public enum NoPictures
 /// </remarks>
 public static class WorkingFolder
 {
-    public static string Path { get; } = System.IO.Path.Combine(LauncherSettings.Folder, "Game");
+    public static string Path => System.IO.Path.Combine(LauncherSettings.Folder, "Game");
 
     /// <summary>The folder of card pictures in it, kept the same as the server's (Pictures.CardPictures).</summary>
     public const string Overrides = "bc";

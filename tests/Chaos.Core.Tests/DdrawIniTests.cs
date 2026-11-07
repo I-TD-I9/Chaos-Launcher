@@ -79,10 +79,10 @@ public class DdrawIniTests
     [Fact]
     public void Screenshots_go_to_the_folder_given_with_a_backslash_after_it()
     {
-        Assert.Equal(@"C:\Users\Duelist\AppData\Local\BattleCity\Screenshots\",
-                     Keys(DdrawIni.For(Resolution.FullScreen, null, @"C:\Users\Duelist\AppData\Local\BattleCity\Screenshots"))["screenshotdir"]);
-        Assert.Equal(@"C:\BATTLE~1\SCREEN~1\",
-                     Keys(DdrawIni.For(Twice, TwiceOn1440p, @"C:\BATTLE~1\SCREEN~1\"))["screenshotdir"]);
+        Assert.Equal(@"C:\Users\Duelist\AppData\Local\ChaosLauncher\Screenshots\",
+                     Keys(DdrawIni.For(Resolution.FullScreen, null, @"C:\Users\Duelist\AppData\Local\ChaosLauncher\Screenshots"))["screenshotdir"]);
+        Assert.Equal(@"C:\CHAOSL~1\SCREEN~1\",
+                     Keys(DdrawIni.For(Twice, TwiceOn1440p, @"C:\CHAOSL~1\SCREEN~1\"))["screenshotdir"]);
         // Without a folder the game could be given, cnc-ddraw keeps its own default.
         Assert.False(Keys(DdrawIni.For(Resolution.FullScreen, null, null)).ContainsKey("screenshotdir"));
     }
