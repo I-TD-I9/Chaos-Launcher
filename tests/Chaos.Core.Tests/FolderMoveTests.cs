@@ -47,6 +47,24 @@ public sealed class FolderMoveTests : IDisposable
     }
 
     [Fact]
+    public void An_empty_folder_under_the_new_name_does_not_keep_the_old_one_behind()
+    {
+        Profile(Old, "duelist");
+        Directory.CreateDirectory(New);
+        Assert.Equal(New, FolderMove.Adopt(Old, New));
+        Assert.False(Directory.Exists(Old));
+        Assert.Equal("duelist", ProfileIn(New));
+    }
+
+    [Fact]
+    public void An_empty_new_folder_with_no_old_one_stays()
+    {
+        Directory.CreateDirectory(New);
+        Assert.Equal(New, FolderMove.Adopt(Old, New));
+        Assert.True(Directory.Exists(New));
+    }
+
+    [Fact]
     public void With_only_the_new_folder_there_is_nothing_to_do()
     {
         Profile(New, "new");
