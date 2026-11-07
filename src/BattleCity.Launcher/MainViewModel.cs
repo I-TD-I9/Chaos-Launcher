@@ -63,6 +63,8 @@ public sealed class MainViewModel : ObservableObject
         // Every reply the launcher reads whole is a few kilobytes, and nothing bigger is held in
         // memory: the card pictures are read as they come (CardPictures).
         http = new HttpClient { Timeout = TimeSpan.FromSeconds(20), MaxResponseContentBufferSize = 1 << 20 };
+        // The server knows launchers by this name, and its sign-up version gate matches it, so it
+        // stays as it is under the launcher's own name.
         http.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue("BattleCityLauncher", Releases.Current.ToString()));
         signUp = new SignUpClient(http, server.Api);
         pictures = new CardPictures(http, server.Api);

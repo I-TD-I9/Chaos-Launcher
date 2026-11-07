@@ -27,7 +27,7 @@ public static class GameStarter
             throw new PatchException($"{game.Client} has changed since the launcher checked it");
         byte[] patched = ClientPatcher.Patch(retail, server);
         if (server.IsPublic && SupportedClient.HashOf(patched) != SupportedClient.PublicSha256)
-            throw new PatchException("the patched client is not the file Battle City expects");
+            throw new PatchException("the patched client is not the file the launcher expects");
 
         Directory.CreateDirectory(folder);
         string target = Path.Combine(folder, ClientName);

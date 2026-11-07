@@ -21,6 +21,6 @@ jobs:
       - run: dotnet publish src/BattleCity.Launcher -c Release -o publish
       - uses: actions/upload-artifact@v7
         with:
-          name: BattleCityLauncher
-          path: publish/BattleCityLauncher.exe
+          name: ChaosLauncher
+          path: publish/ChaosLauncher.exe
           if-no-files-found: error

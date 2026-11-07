@@ -16,7 +16,7 @@ public partial class App : Application
     // stay open for.
     void ShowAndCarryOn(object sender, DispatcherUnhandledExceptionEventArgs e)
     {
-        MessageBox.Show($"Something went wrong: {e.Exception.GetBaseException().Message}", "Battle City Launcher",
+        MessageBox.Show($"Something went wrong: {e.Exception.GetBaseException().Message}", "Chaos Launcher",
                         MessageBoxButton.OK, MessageBoxImage.Error);
         e.Handled = true;
         if (MainWindow is not { IsLoaded: true })

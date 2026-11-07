@@ -6,7 +6,7 @@
         xmlns:local="clr-namespace:BattleCity.Launcher"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance Type=local:MainViewModel}"
-        Title="Battle City Launcher"
+        Title="Chaos Launcher"
         SizeToContent="WidthAndHeight" ResizeMode="CanMinimize" WindowStartupLocation="CenterScreen"
         Background="{StaticResource PaperBrush}" Foreground="{StaticResource TextBrush}"
         FontFamily="Segoe UI" FontSize="14" UseLayoutRounding="True" TextOptions.TextFormattingMode="Display">
@@ -99,9 +99,9 @@
                      HorizontalAlignment="Right" Margin="0,5,12,0" />
         </StackPanel>
         <StackPanel>
-          <local:OutlinedText Text="BATTLE CITY" FontSize="40" FontStyle="Italic" FontWeight="Black"
+          <local:OutlinedText Text="CHAOS LAUNCHER" FontSize="36" FontStyle="Italic" FontWeight="Black"
                               Fill="{StaticResource GoldBrush}" Stroke="{StaticResource InkBrush}" StrokeThickness="5"
-                              Shadow="3.5" HorizontalAlignment="Left" AutomationProperties.Name="Battle City" />
+                              Shadow="3.5" HorizontalAlignment="Left" AutomationProperties.Name="Chaos Launcher" />
           <StackPanel Orientation="Horizontal" Margin="1,9,0,0">
             <Rectangle Width="136" Height="16" VerticalAlignment="Center">
               <Rectangle.Fill>

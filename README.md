@@ -1,10 +1,10 @@
 <p align="center">
-  <img src="docs/banner.png" width="100%" alt="Battle City, Yu-Gi-Oh! Online: Phase 1's duels, back online. Bring your own copy of the game.">
+  <img src="docs/banner.png" width="100%" alt="Chaos Launcher, Yu-Gi-Oh! Online: Phase 1's duels, back online. Bring your own copy of the game.">
 </p>
 
 <p align="center">
   <b>It's time to duel!</b> Yu-Gi-Oh! Online Phase 1 went offline long ago.<br>
-  Battle City, a fan-made server, brings its online play back, and this launcher takes your copy of
+  Battle City, a fan-made server, brings its online play back, and Chaos Launcher takes your copy of
   the game there.
 </p>
 
@@ -28,7 +28,7 @@
 
 1. You need Windows 10 or 11, 64-bit, and Yu-Gi-Oh! ONLINE, the February 2006 version
    (`Ver.060110.00`), unpacked anywhere. The launcher never changes your game folder.
-2. [Download the launcher](https://github.com/I-TD-I9/Battle-City-Launcher/releases/latest) and run
+2. [Download Chaos Launcher](https://github.com/I-TD-I9/Battle-City-Launcher/releases/latest) and run
    it. If Windows says it doesn't recognise the app, click **More info**, then **Run anyway**.
 3. Click **Change…** and pick your game folder.
 4. Make your account under **Account**. You'll get a code by email to finish it.
@@ -65,6 +65,6 @@ carries for the bigger screens, and checks it against the hash the project pins.
 
 ## License
 
-GPL-3.0. The launcher carries cnc-ddraw, which is under the MIT License: see
+GPL-3.0. Chaos Launcher carries cnc-ddraw, which is under the MIT License: see
 [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md). Yu-Gi-Oh! is a trademark of its owners; this
 project isn't affiliated with or endorsed by Konami.

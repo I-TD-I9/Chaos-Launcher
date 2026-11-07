@@ -3,7 +3,7 @@ using Microsoft.Win32;
 namespace BattleCity.Game;
 
 /// <summary>
-/// The registry key Battle City's copy of the client reads its settings from, under
+/// The registry key the launcher's copy of the client reads its settings from, under
 /// HKEY_CURRENT_USER (ClientPatcher.SetRegistryRoot): the folder it keeps its settings, profiles
 /// and decks in, and the release it belongs to.
 /// </summary>

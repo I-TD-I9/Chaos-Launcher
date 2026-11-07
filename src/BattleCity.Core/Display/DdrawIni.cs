@@ -49,7 +49,7 @@ public static class DdrawIni
     {
         var lines = new List<string>
         {
-            "; Battle City Launcher writes this file every time it starts the game, so changes made here don't last.",
+            "; Chaos Launcher writes this file every time it starts the game, so changes made here don't last.",
             "[ddraw]",
         };
         if (resolution.IsFullScreen)
