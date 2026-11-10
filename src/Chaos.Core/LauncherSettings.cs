@@ -39,9 +39,6 @@ public sealed class LauncherSettings
     /// <summary>The game folder the player chose, when the launcher could not find it alone.</summary>
     public string? GameFolder { get; set; }
 
-    /// <summary>The UserID of the last account made or given a new password with the launcher, for its Account page.</summary>
-    public string? LastAccount { get; set; }
-
     /// <summary>How the game is shown from the next Play on: in its own window unless the player chose otherwise.</summary>
     public Display.Resolution Resolution { get; set; }
 
@@ -80,7 +77,7 @@ public sealed class LauncherSettings
             server = server with { GateHost = host };
         if (GatePort is > 0 and <= 0xFFFF)
             server = server with { GatePort = GatePort.Value };
-        // A sign-up carries a password, so only a server on this machine may take it unencrypted.
+        // Plain http is only for a server on this machine: anywhere else the reply could be tampered with.
         if (Api is { } api && Uri.TryCreate(api, UriKind.Absolute, out var uri)
             && (uri.Scheme == Uri.UriSchemeHttps || (uri.Scheme == Uri.UriSchemeHttp && uri.IsLoopback)))
             server = server with { Api = uri };

@@ -47,10 +47,9 @@ public sealed class LauncherSettingsTests : IDisposable
     [Fact]
     public void What_is_saved_loads_back()
     {
-        new LauncherSettings { GameFolder = @"D:\Games\Yu-Gi-Oh! ONLINE", LastAccount = "Duelist" }.Save(File);
+        new LauncherSettings { GameFolder = @"D:\Games\Yu-Gi-Oh! ONLINE" }.Save(File);
         var settings = LauncherSettings.Load(File);
         Assert.Equal(@"D:\Games\Yu-Gi-Oh! ONLINE", settings.GameFolder);
-        Assert.Equal("Duelist", settings.LastAccount);
         Assert.False(System.IO.File.Exists(File + ".new"));
     }
 
@@ -94,20 +93,22 @@ public sealed class LauncherSettingsTests : IDisposable
     public void A_resolution_the_launcher_does_not_know_reads_as_the_default_and_keeps_the_rest(string value, string resolution)
     {
         Directory.CreateDirectory(folder);
-        System.IO.File.WriteAllText(File, $$"""{ "resolution": {{value}}, "lastAccount": "Duelist" }""");
+        System.IO.File.WriteAllText(File, $$"""{ "resolution": {{value}}, "gameFolder": "D:\\Games\\Yu-Gi-Oh! ONLINE" }""");
         var settings = LauncherSettings.Load(File);
         Assert.Equal(resolution, settings.Resolution.ToString());
-        Assert.Equal("Duelist", settings.LastAccount);
+        Assert.Equal(@"D:\Games\Yu-Gi-Oh! ONLINE", settings.GameFolder);
     }
 
     [Fact]
-    public void A_file_without_a_last_account_still_loads()
+    public void A_file_that_still_names_a_last_account_loads_and_drops_it()
     {
+        // Earlier launchers remembered the account they made. Accounts are made on the website now.
         Directory.CreateDirectory(folder);
-        System.IO.File.WriteAllText(File, """{ "gameFolder": "D:\\Games\\Yu-Gi-Oh! ONLINE" }""");
+        System.IO.File.WriteAllText(File, """{ "gameFolder": "D:\\Games\\Yu-Gi-Oh! ONLINE", "lastAccount": "Duelist" }""");
         var settings = LauncherSettings.Load(File);
         Assert.Equal(@"D:\Games\Yu-Gi-Oh! ONLINE", settings.GameFolder);
-        Assert.Null(settings.LastAccount);
+        settings.Save(File);
+        Assert.DoesNotContain("lastAccount", System.IO.File.ReadAllText(File));
     }
 
     [Fact]

@@ -29,7 +29,7 @@ public static class Releases
             using var response = await http.SendAsync(request, cancel);
             if (!response.IsSuccessStatusCode)
                 return null;
-            // As bytes, whatever charset the reply claims (SignUpClient.Outcome says why).
+            // As bytes, whatever charset the reply claims (ServerInfo.FetchAsync says why).
             using var json = JsonDocument.Parse(await response.Content.ReadAsByteArrayAsync(cancel));
             return Parse(json.RootElement);
         }

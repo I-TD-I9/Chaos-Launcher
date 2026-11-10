@@ -31,7 +31,8 @@
 2. [Download Chaos Launcher](https://github.com/I-TD-I9/Chaos-Launcher/releases/latest) and run
    it. If Windows says it doesn't recognise the app, click **More info**, then **Run anyway**.
 3. Click **Change…** and pick your game folder.
-4. Make your account under **Account**. You'll get a code by email to finish it.
+4. Click **Create account** under **Account**. It opens the Rebirth of Chaos website, where you sign in
+   with Discord and choose the UserID and password you'll use in the game.
 5. Click **Play** and log in with your new account.
 
 <p align="center">
@@ -42,7 +43,8 @@
 
 - Your UserID is case-sensitive, and a UserID or password is letters and digits only: the game's
   login screen won't take anything else.
-- One account per email address. Forgot your password? Set a new one under **Account**.
+- Forgot your password? **Forgot password** under **Account** opens the website, where you can set
+  a new one.
 - The game runs in its own small window. To play it bigger, pick a size or **Full screen** for
   **Resolution** under **Settings**. The sizes with a star are the sharpest, and full screen uses
   your main monitor.

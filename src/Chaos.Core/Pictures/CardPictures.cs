@@ -125,7 +125,7 @@ public sealed class CardPictures(HttpClient http, Uri api, TimeProvider? clock =
         using var response = await http.GetAsync(new Uri(api, "art/manifest.json"), HttpCompletionOption.ResponseHeadersRead, limit.Token);
         if (response.StatusCode != HttpStatusCode.OK)
             return (response.StatusCode, null);
-        // As bytes, whatever charset the reply claims (SignUpClient.Outcome says why).
+        // As bytes, whatever charset the reply claims (ServerInfo.FetchAsync says why).
         await using var stream = await response.Content.ReadAsStreamAsync(limit.Token);
         using var body = new MemoryStream();
         var buffer = new byte[81920];

@@ -8,7 +8,7 @@ public static class ServerProbe
     /// <summary>
     /// Whether a connection to the gate opens within <paramref name="timeout"/>. It is closed
     /// straight away, which the gate takes as a client that left before saying anything. The
-    /// gate rather than the sign-up API, because the game's ports are what a player's network
+    /// gate rather than the web API, because the game's ports are what a player's network
     /// might block.
     /// </summary>
     public static async Task<bool> GateOpensAsync(ServerEndpoints server, TimeSpan timeout,

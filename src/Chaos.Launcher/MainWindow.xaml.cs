@@ -2,7 +2,6 @@ using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Interop;
-using System.Windows.Threading;
 using Microsoft.Win32;
 
 namespace Chaos.Launcher;
@@ -49,64 +48,9 @@ public partial class MainWindow : Window
             model.ChooseFolder(dialog.FolderName);
     }
 
-    void NewAccount_Click(object sender, RoutedEventArgs e)
-    {
-        model.OpenForm();
-        FocusLater(UserIdBox);
-    }
+    void NewAccount_Click(object sender, RoutedEventArgs e) => MainViewModel.OpenCreateAccount();
 
-    void Forgot_Click(object sender, RoutedEventArgs e)
-    {
-        model.OpenForgot();
-        FocusLater(ForgotEmailBox);
-    }
-
-    void Cancel_Click(object sender, RoutedEventArgs e)
-    {
-        ClearPasswords();
-        model.CloseForm();
-    }
-
-    void Back_Click(object sender, RoutedEventArgs e) => model.Back();
-
-    async void SignUp_Click(object sender, RoutedEventArgs e)
-    {
-        if (await model.SignUpAsync(Password.Password, Confirm.Password))
-            FocusLater(CodeBox);
-    }
-
-    async void ConfirmSignUp_Click(object sender, RoutedEventArgs e)
-    {
-        if (await model.ConfirmSignUpAsync())
-            ClearPasswords();
-    }
-
-    async void SignUpCodeAgain_Click(object sender, RoutedEventArgs e) => await model.SendSignUpCodeAgainAsync();
-
-    async void ForgotSend_Click(object sender, RoutedEventArgs e)
-    {
-        if (await model.RequestResetAsync())
-            FocusLater(ResetCodeBox);
-    }
-
-    async void ResetCodeAgain_Click(object sender, RoutedEventArgs e) => await model.SendResetCodeAgainAsync();
-
-    async void Reset_Click(object sender, RoutedEventArgs e)
-    {
-        if (await model.ResetPasswordAsync(NewPassword.Password, NewConfirm.Password))
-            ClearPasswords();
-    }
-
-    void ClearPasswords()
-    {
-        Password.Clear();
-        Confirm.Clear();
-        NewPassword.Clear();
-        NewConfirm.Clear();
-    }
-
-    // A box only takes focus once its page is laid out.
-    void FocusLater(UIElement box) => Dispatcher.BeginInvoke(() => box.Focus(), DispatcherPriority.Input);
+    void Forgot_Click(object sender, RoutedEventArgs e) => MainViewModel.OpenResetPassword();
 
     void Update_Click(object sender, RoutedEventArgs e) => MainViewModel.Open(model.UpdatePage);
 

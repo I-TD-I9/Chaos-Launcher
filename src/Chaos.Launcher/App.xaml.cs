@@ -13,7 +13,7 @@ public partial class App : Application
     }
 
     // A failure nothing else caught is reported, and the launcher stays open: closing it would
-    // take the player's half-typed sign-up with it. Before its window is up there is nothing to
+    // take whatever the player was in the middle of with it. Before its window is up there is nothing to
     // stay open for.
     void ShowAndCarryOn(object sender, DispatcherUnhandledExceptionEventArgs e)
     {
