@@ -16,6 +16,7 @@ public class CardListPatchTests
         (0x5BC863, 0x6EC88F),
         (0x5E5355, 0x6EC8AD),
         (0x5E53FF, 0x6EC8F9),
+        (0x5E5390, 0x6ECF85),
     ];
 
     const uint StubVa = 0x6EC7A0;
@@ -58,7 +59,7 @@ public class CardListPatchTests
     }
 
     [Fact]
-    public void The_table_is_in_order_without_repeats_and_fits_before_the_display_stub()
+    public void The_table_is_in_order_without_repeats_and_fits_before_the_procedure_check()
     {
         var entries = CardListTable.Entries;
         for (int i = 1; i < entries.Count; i++)
@@ -78,9 +79,12 @@ public class CardListPatchTests
 
         var table = CardListTable.EncodeTable();
         Assert.Equal([0xFF, 0xFF, 0x00, 0x00], table[^4..]);
-        Assert.True(TableVa + table.Length <= TestImage.StubVa);
         Assert.True(table.Length <= CardListTable.Capacity);
-        Assert.Equal(TestImage.CardCaveVa + (uint)TestImage.CardCaveLength, TableVa + (uint)table.Length);
+        Assert.Equal(0x6ECBA0u, TableVa + (uint)table.Length);
+        // The table may run up to the procedure check: 383 cards and the terminator.
+        Assert.Equal(TestImage.ProcHeldVa, TableVa + (uint)CardListTable.Capacity);
+        Assert.Equal(384, CardListTable.Capacity / 4);
+        Assert.Equal(TestImage.CardCaveVa + (uint)TestImage.CardCaveLength, ClientPatcher.ProcHeldVa);
     }
 
     [Fact]
@@ -133,7 +137,10 @@ public class CardListPatchTests
         Assert.Equal(StubBytes, cave[..StubBytes.Length].ToArray());
         Assert.All(cave[StubBytes.Length..(int)(KindMapVa - StubVa)].ToArray(), b => Assert.Equal(0, b));
         Assert.Equal(KindMapBytes, cave[(int)(KindMapVa - StubVa)..(int)(TableVa - StubVa)].ToArray());
-        Assert.Equal(TableBytes, cave[(int)(TableVa - StubVa)..].ToArray());
+        int tableEnd = (int)(TableVa - StubVa) + TableBytes.Length;
+        Assert.Equal(TableBytes, cave[(int)(TableVa - StubVa)..tableEnd].ToArray());
+        Assert.All(cave[tableEnd..].ToArray(), b => Assert.Equal(0, b));
+        Assert.Equal(ProcHeldPatchTests.CheckBytes, patched.AsSpan(TestImage.ProcHeldOffset, TestImage.ProcHeldLength).ToArray());
         foreach (var (place, _) in Jumps)
         {
             var site = ClientPatcher.CardListSites.Single(site => site.Va == place);
@@ -161,6 +168,8 @@ public class CardListPatchTests
     [InlineData(0x180)]
     [InlineData(0x1C0)]
     [InlineData(0x3FF)]
+    [InlineData(0x400)]
+    [InlineData(0x7BF)]
     public void Anything_but_zeros_where_the_routine_and_tables_go_is_refused(int at)
     {
         var image = TestImage.Build();
@@ -206,8 +215,8 @@ public class CardListPatchTests
     }
 
     [Theory]
-    [InlineData(0xBA0u, 0xBA0u)]
-    [InlineData(0xB9Fu, 0x1000u)]
+    [InlineData(0xFC2u, 0xFC2u)]
+    [InlineData(0xFC1u, 0x1000u)]
     [InlineData(0xFF0u, 0xFF0u)]
     public void Text_keeps_a_size_that_covers_the_table_and_gets_one_that_does_not(uint before, uint after)
     {
@@ -236,9 +245,9 @@ public class CardListPatchTests
         var retail = new PeImage(File.ReadAllBytes(RetailClient.Path!));
         foreach (var (place, bytes) in TestImage.ListSites)
             Assert.Equal(bytes, retail.Read(place, bytes.Length).ToArray());
-        Assert.All(retail.Read(StubVa, TestImage.CardCaveLength).ToArray(), b => Assert.Equal(0, b));
-        Assert.Equal(TestImage.CardCaveLength, 0x6ECBA0 - 0x6EC7A0);
-        Assert.True(0x6ECBA0 <= ClientPatcher.WrapperStubVa);
+        Assert.All(retail.Read(StubVa, TestImage.CardCaveLength + TestImage.ProcHeldLength).ToArray(), b => Assert.Equal(0, b));
+        Assert.Equal(TestImage.CardCaveLength, 0x6ECF60 - 0x6EC7A0);
+        Assert.True(TestImage.ProcHeldVa + TestImage.ProcHeldLength <= ClientPatcher.WrapperStubVa);
     }
 
     [RetailClientFact]
@@ -249,6 +258,7 @@ public class CardListPatchTests
         Assert.Equal(StubBytes, patched.Read(StubVa, StubBytes.Length).ToArray());
         Assert.Equal(KindMapBytes, patched.Read(KindMapVa, 64).ToArray());
         Assert.Equal(TableBytes, patched.Read(TableVa, TableBytes.Length).ToArray());
+        Assert.Equal(ProcHeldPatchTests.CheckBytes, patched.Read(TestImage.ProcHeldVa, TestImage.ProcHeldLength).ToArray());
         foreach (var (place, _) in Jumps)
         {
             var site = ClientPatcher.CardListSites.Single(site => site.Va == place);
@@ -267,6 +277,7 @@ public class CardListPatchTests
             (original.Offset(ClientPatcher.DirectDrawCallVa, 6), 6),
             (original.Offset(ClientPatcher.WrapperStubVa, 27), 27),
             (original.Offset(StubVa, TestImage.CardCaveLength), TestImage.CardCaveLength),
+            (original.Offset(TestImage.ProcHeldVa, TestImage.ProcHeldLength), TestImage.ProcHeldLength),
             (original.ChecksumOffset, 4),
             // .text's size in its section header.
             (retail.AsSpan(0, 0x400).IndexOf(".text"u8) + 8, 4),
@@ -286,8 +297,8 @@ public class CardListPatchTests
         f93f771c0fb68920c96e0083f90b721083f90f770b0fa3c87306b801000000c3568b742408e9bb2cebff8b4c240c83f9
         3f77220fb68920c96e0083f90f77168b44240851e827ffffff590fa3c87306b801000000c38b4c240c56e986e8eeff0f
         b707e809ffffffa8200f850100edff668b1752e8a858d1ffe9bfffecff8b7c241c5756e818e8efff83c40885c075358b
-        c5e8dafeffffa80874280fb7c525ff0f00006aff50e8668debff83c40885c075110fb7c589442418bb000c0000e95b8b
-        efff33c0e96a8aefff3df00500000f84028befff8bc5e895feffffa8080f85f38aefffe9358befff
+        c5e8dafeffffa80874280fb7c525ff0f00006aff50e8668debff83c40885c075110fb7c589442418e973060000909090
+        909033c0e96a8aefff3df00500000f84028befff8bc5e895feffffa8080f8562060000e9358befff
         """);
 
     // The kind map: a byte for each of the 64 kinds, from 0x6ec920.
@@ -351,11 +362,11 @@ public class CardListPatchTests
         (0x6EC8C8, 2, 0x6EC8F2),
         (0x6EC8D5, 5, 0x5A5640),
         (0x6EC8DF, 2, 0x6EC8F2),
-        (0x6EC8ED, 5, 0x5E544D),
+        (0x6EC8E8, 5, 0x6ECF60),
         (0x6EC8F4, 5, 0x5E5363),
         (0x6EC8FE, 6, 0x5E5406),
         (0x6EC906, 5, 0x6EC7A0),
-        (0x6EC90D, 6, 0x5E5406),
+        (0x6EC90D, 6, 0x6ECF75),
         (0x6EC913, 5, 0x5E544D),
     ];
 }

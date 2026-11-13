@@ -82,8 +82,8 @@ public enum CardList : ushort
 /// </summary>
 public static class CardListTable
 {
-    /// <summary>How many bytes the client's table may take: it must end before the display stub.</summary>
-    internal const int Capacity = (int)(ClientPatcher.WrapperStubVa - ClientPatcher.CardTableVa);
+    /// <summary>How many bytes the client's table may take: it must end before the procedure check, 383 cards and the terminator.</summary>
+    internal const int Capacity = (int)(ClientPatcher.ProcHeldVa - ClientPatcher.CardTableVa);
 
     /// <summary>
     /// The bit of a card's flags that a window kind tests, by kind. A kind that is not here has

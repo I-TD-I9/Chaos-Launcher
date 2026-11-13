@@ -9,7 +9,7 @@ namespace Chaos.Tests;
 /// DirectDraw at 0x4db103, the activation check's jump at 0x5e2338 and the port's instruction at
 /// 0x67a9f2, each in a code section; the end of .text, which reaches 0x6ec792 in memory and
 /// 0x6ed000 on disk, the rest zeros; the gate's host name in a data section at 0x71e064; and in
-/// four more code sections the eight places the card lists are extended from (<see cref="ListSites"/>).
+/// four more code sections the nine places the card lists are extended from (<see cref="ListSites"/>).
 /// The real client cannot be part of the repository.
 /// </summary>
 static class TestImage
@@ -43,7 +43,7 @@ static class TestImage
     ];
 
     /// <summary>
-    /// The client's bytes at the eight places the card lists jump from, by virtual address. They
+    /// The client's bytes at the nine places the card lists jump from, by virtual address. They
     /// are listed again here, from the client, apart from the patcher's own.
     /// </summary>
     public static readonly (uint Va, byte[] Bytes)[] ListSites =
@@ -56,12 +56,19 @@ static class TestImage
         (0x5BC863, [0x66, 0x8B, 0x17, 0x52, 0xE8, 0xE4, 0x58, 0xE4, 0xFF]),
         (0x5E5355, [0x8B, 0x7C, 0x24, 0x1C, 0x57]),
         (0x5E53FF, [0x3D, 0xF0, 0x05, 0x00, 0x00, 0x75, 0x47]),
+        (0x5E5390, [0xBB, 0x00, 0x0C, 0x00, 0x00]),
     ];
 
-    /// <summary>Where the card lists' routine begins in the zeros of .text, and how far the routine, map and table reach.</summary>
+    /// <summary>
+    /// Where the card lists' routine begins in the zeros of .text, and how far the routine, map
+    /// and table may reach: up to the procedure check, which is 98 bytes long.
+    /// </summary>
     public const uint CardCaveVa = 0x6EC7A0;
-    public const int CardCaveLength = 0x400;
+    public const int CardCaveLength = 0x7C0;
     public static int CardCaveOffset => TextRaw + (int)(CardCaveVa - 0x400000 - TextRva);
+    public const uint ProcHeldVa = 0x6ECF60;
+    public const int ProcHeldLength = 98;
+    public static int ProcHeldOffset => TextRaw + (int)(ProcHeldVa - 0x400000 - TextRva);
 
     /// <summary>The file offset of the byte at <paramref name="va"/> in one of the card lists' sections.</summary>
     public static int ListOffset(uint va)
