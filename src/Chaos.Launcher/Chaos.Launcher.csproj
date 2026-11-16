@@ -21,6 +21,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Resource Include="Assets\Logo.png" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\Chaos.Core\Chaos.Core.csproj" />
   </ItemGroup>
 

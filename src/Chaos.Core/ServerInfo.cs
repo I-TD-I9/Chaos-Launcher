@@ -5,9 +5,13 @@ namespace Chaos;
 
 /// <summary>
 /// What the server's GET /api/info says that the launcher uses: the oldest launcher it still takes,
-/// when it names one.
+/// when it names one, and whether sign-up is open.
 /// </summary>
-public sealed record ServerInfo(Version? OldestLauncher)
+/// <param name="SignUpOpen">
+/// Whether the server takes new accounts ("registration": "open" or "closed"), or null when it
+/// doesn't say.
+/// </param>
+public sealed record ServerInfo(Version? OldestLauncher, bool? SignUpOpen = null)
 {
     /// <summary>Whether a launcher of this version is older than the server takes.</summary>
     public bool TooOld(Version launcher) => OldestLauncher is { } oldest && launcher < oldest;
@@ -37,7 +41,12 @@ public sealed record ServerInfo(Version? OldestLauncher)
     /// <summary>The info in a GET /api/info reply, or null when it is not one.</summary>
     internal static ServerInfo? FromInfo(JsonElement root) =>
         root.ValueKind == JsonValueKind.Object && root.TryGetProperty("ok", out var ok) && ok.ValueKind == JsonValueKind.True
-            ? new ServerInfo(Oldest(root))
+            ? new ServerInfo(Oldest(root), SignUp(root))
+            : null;
+
+    static bool? SignUp(JsonElement root) =>
+        root.TryGetProperty("registration", out var registration) && registration.ValueKind == JsonValueKind.String
+            ? registration.GetString() switch { "open" => true, "closed" => false, _ => null }
             : null;
 
     // No minimum, a null one or one that is no version all let any launcher in: a server from

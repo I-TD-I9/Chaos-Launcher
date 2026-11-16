@@ -7,6 +7,7 @@ using Chaos.Client;
 using Chaos.Display;
 using Chaos.Game;
 using Chaos.Pictures;
+using Chaos.Titles;
 
 namespace Chaos.Launcher;
 
@@ -21,6 +22,19 @@ public enum ServerState
     Offline,
 }
 
+/// <summary>Where the update prompt has got to.</summary>
+public enum UpdateStep
+{
+    /// <summary>It offers the new launcher: Update now, or Not now.</summary>
+    Offer,
+
+    /// <summary>The new launcher is coming, the LP meter counting it down.</summary>
+    Downloading,
+
+    /// <summary>It didn't work out, and the prompt says why and offers the release page.</summary>
+    Failed,
+}
+
 /// <summary>Everything the launcher's window shows and does.</summary>
 public sealed class MainViewModel : ObservableObject
 {
@@ -28,6 +42,7 @@ public sealed class MainViewModel : ObservableObject
     readonly ServerEndpoints server;
     readonly HttpClient http;
     readonly CardPictures pictures;
+    readonly TitleNames titles;
     // The window's thread, where a game that exits on its own is reported back.
     readonly SynchronizationContext ui = SynchronizationContext.Current ?? new SynchronizationContext();
 
@@ -41,6 +56,7 @@ public sealed class MainViewModel : ObservableObject
         http = new HttpClient { Timeout = TimeSpan.FromSeconds(20), MaxResponseContentBufferSize = 1 << 20 };
         http.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue("ChaosLauncher", Releases.Current.ToString()));
         pictures = new CardPictures(http, server.Api);
+        titles = new TitleNames(http, server.Api);
     }
 
     /// <summary>Finds the game, then asks after the server and the launcher's own updates.</summary>
@@ -49,7 +65,7 @@ public sealed class MainViewModel : ObservableObject
         if (elevated)
             PlayError = AsAdministrator;
         Game = await Task.Run(() => GameLocator.Find(settings.GameFolder));
-        await Task.WhenAll(CheckServerAsync(), CheckForUpdateAsync());
+        await Task.WhenAll(CheckServerAsync(), OfferUpdateAsync(), FinishUpdateAsync());
     }
 
     // --- The game --------------------------------------------------------------------------
@@ -241,13 +257,40 @@ public sealed class MainViewModel : ObservableObject
     // --- The card pictures -------------------------------------------------------------------
 
     string? picturesText;
+    PicturesProgress? picturesMeter;
 
     /// <summary>A line on how the card pictures stand, or null when the server hands out none.</summary>
     public string? PicturesText
     {
         get => picturesText;
-        private set => Set(ref picturesText, value);
+        private set
+        {
+            if (Set(ref picturesText, value))
+                Raise(nameof(PicturesUpToDateShown), nameof(PicturesLineShown));
+        }
     }
+
+    /// <summary>How far the pictures have come while they download, for the LP meter; null otherwise.</summary>
+    public PicturesProgress? PicturesMeter
+    {
+        get => picturesMeter;
+        private set
+        {
+            if (Set(ref picturesMeter, value))
+                Raise(nameof(PicturesMeterShown), nameof(PicturesLineShown), nameof(PicturesLeft), nameof(PicturesTotal));
+        }
+    }
+
+    public bool PicturesMeterShown => picturesMeter is not null;
+
+    /// <summary>Whether the line under PLAY shows, in place of the meter.</summary>
+    public bool PicturesLineShown => picturesMeter is null && picturesText is not null;
+
+    public bool PicturesUpToDateShown => picturesText == PicturesUpToDate;
+
+    public long PicturesLeft => picturesMeter is { } step ? step.Total - step.Done : 0;
+
+    public long PicturesTotal => picturesMeter?.Total ?? 0;
 
     const string PicturesChecking = "Checking the card pictures…";
     const string PicturesUpToDate = "Card pictures up to date.";
@@ -262,10 +305,11 @@ public sealed class MainViewModel : ObservableObject
     const string NoPicturesLauncherFolder =
         "No card pictures from the server: the launcher's folder, under your Windows user name, has letters the game can't read.";
 
-    // Writes the working folder's patch.txt and brings its pictures up to date, and returns the
-    // folder to start the game in. The pictures never keep the game from starting for long
-    // (CardPictures.Budget): whatever goes wrong, it starts with the ones it has, or with none,
-    // from the game's own folder if need be.
+    // Writes the working folder's patch.txt and brings its pictures and the titles' names up to
+    // date, and returns the folder to start the game in. Neither keeps the game from starting for
+    // long (CardPictures.Budget, TitleNames.Patience): whatever goes wrong, it starts with the
+    // ones it has, or with none, from the game's own folder if need be. The titles are asked for
+    // while the pictures come, and written once they are in place.
     async Task<string> PreparePicturesAsync(GameFolder current)
     {
         string start;
@@ -288,12 +332,17 @@ public sealed class MainViewModel : ObservableObject
         bool done = false;
         var progress = new Progress<PicturesProgress>(step =>
         {
-            if (!done)
-                PicturesText = step.Total == 0 ? PicturesChecking : $"Updating card pictures, {step.Done} of {step.Total}";
+            if (done)
+                return;
+            PicturesText = step.Total == 0 ? PicturesChecking : $"Updating card pictures, {step.Done} of {step.Total}";
+            PicturesMeter = step.Total == 0 ? null : step;
         });
         PicturesText = PicturesChecking;
-        var outcome = await pictures.UpdateAsync(Path.Combine(WorkingFolder.Path, WorkingFolder.Overrides), progress);
+        string bc = Path.Combine(WorkingFolder.Path, WorkingFolder.Overrides);
+        var named = titles.FetchAsync();
+        var outcome = await pictures.UpdateAsync(bc, progress);
         done = true;
+        PicturesMeter = null;
         PicturesText = outcome switch
         {
             PicturesOutcome.None => null,
@@ -302,6 +351,10 @@ public sealed class MainViewModel : ObservableObject
             PicturesOutcome.Unwritable => PicturesUnwritten,
             _ => PicturesNotUpdated,
         };
+        // A title the game has no name for shows as "Unknown", which says all there is to say, so
+        // how this went is not told.
+        var reply = await named;
+        await Task.Run(() => TitleNames.Write(bc, reply));
         return start;
     }
 
@@ -427,6 +480,26 @@ public sealed class MainViewModel : ObservableObject
 
     public bool CanCheck => !checking;
 
+    bool? signUpOpen;
+
+    /// <summary>Whether the server takes new accounts, as its GET /api/info last said.</summary>
+    public bool? SignUpOpen
+    {
+        get => signUpOpen;
+        private set
+        {
+            if (Set(ref signUpOpen, value))
+                Raise(nameof(SignUpStateText));
+        }
+    }
+
+    public string? SignUpStateText => signUpOpen switch
+    {
+        true => "Sign-up open",
+        false => "Sign-up closed",
+        null => null,
+    };
+
     public async Task CheckServerAsync()
     {
         if (checking || DateTime.UtcNow - lastCheck < CheckInterval)
@@ -442,7 +515,10 @@ public sealed class MainViewModel : ObservableObject
             var fetched = await fetching;
             bool gate = await probing;
             if (fetched is not null)
+            {
                 Outdated = fetched.TooOld(Releases.Current);
+                SignUpOpen = fetched.SignUpOpen;
+            }
             ServerState = gate ? ServerState.Online : fetched is not null ? ServerState.Blocked : ServerState.Offline;
         }
         catch (Exception)
@@ -471,14 +547,24 @@ public sealed class MainViewModel : ObservableObject
 
     LauncherRelease? update;
     bool outdated;
+    bool updateChecked;
+    bool checkingUpdate;
+    bool promptShown;
+    UpdateStep updateStep;
+    UpdateProgress downloaded;
+    string? updateFailure;
+    string? updatedNote;
+    CancellationTokenSource? updateCancel;
 
+    /// <summary>A newer release than this launcher, once one has been found.</summary>
     public LauncherRelease? Update
     {
         get => update;
         private set
         {
             if (Set(ref update, value))
-                Raise(nameof(ShowUpdate), nameof(UpdateText));
+                Raise(nameof(ShowUpdate), nameof(UpdateText), nameof(ShowUpdatedNote), nameof(VersionStateText),
+                      nameof(UpdateButtonText), nameof(PromptTitle), nameof(PromptText), nameof(DownloadText));
         }
     }
 
@@ -492,7 +578,8 @@ public sealed class MainViewModel : ObservableObject
         private set
         {
             if (Set(ref outdated, value))
-                Raise(nameof(CanPlay), nameof(ShowUpdate), nameof(UpdateText));
+                Raise(nameof(CanPlay), nameof(ShowUpdate), nameof(UpdateText), nameof(ShowUpdatedNote),
+                      nameof(PromptTitle), nameof(PromptText));
         }
     }
 
@@ -504,6 +591,77 @@ public sealed class MainViewModel : ObservableObject
     /// <summary>Where to download the new launcher: the newer release found, else the latest one.</summary>
     public Uri UpdatePage => update?.Page ?? Releases.LatestPage;
 
+    /// <summary>"Updated to 0.8.1." once a launcher started after its own update has tidied up.</summary>
+    public string? UpdatedNote
+    {
+        get => updatedNote;
+        private set
+        {
+            if (Set(ref updatedNote, value))
+                Raise(nameof(ShowUpdatedNote));
+        }
+    }
+
+    public bool ShowUpdatedNote => updatedNote is not null && !ShowUpdate;
+
+    /// <summary>What the Settings page says of this launcher's version.</summary>
+    public string VersionStateText =>
+        update is not null ? $"{update.Version} is out"
+        : updateChecked ? $"{Releases.Current}, up to date"
+        : Releases.Current.ToString();
+
+    public string UpdateButtonText =>
+        checkingUpdate ? "Checking…" : update is not null ? $"Update to {update.Version}" : "Check for updates";
+
+    public bool CanCheckUpdate => !checkingUpdate && updateStep != UpdateStep.Downloading;
+
+    /// <summary>Whether the update prompt is up over the window.</summary>
+    public bool PromptShown
+    {
+        get => promptShown;
+        private set => Set(ref promptShown, value);
+    }
+
+    public UpdateStep UpdateStep
+    {
+        get => updateStep;
+        private set
+        {
+            if (Set(ref updateStep, value))
+                Raise(nameof(PromptTitle), nameof(PromptText), nameof(CanCheckUpdate));
+        }
+    }
+
+    public string PromptTitle =>
+        updateStep == UpdateStep.Failed ? "The update didn't finish"
+        : outdated ? "This launcher is out of date"
+        : "A new launcher is ready";
+
+    public string PromptText =>
+        updateStep == UpdateStep.Failed ? updateFailure ?? ""
+        : update is null ? ""
+        : outdated ? $"Battle City no longer takes version {Releases.Current}. Update to {update.Version} to keep playing."
+        : $"Version {update.Version} is out (you have {Releases.Current}). Update now? It takes a few seconds, and your settings stay as they are.";
+
+    public string DownloadText => update is null ? "" : $"Downloading {update.Version}…";
+
+    /// <summary>How far the new launcher has come, in bytes.</summary>
+    public UpdateProgress Downloaded
+    {
+        get => downloaded;
+        private set
+        {
+            if (Set(ref downloaded, value))
+                Raise(nameof(DownloadLeft), nameof(DownloadTotal));
+        }
+    }
+
+    /// <summary>The kilobytes of the new launcher still to come, for the LP meter.</summary>
+    public long DownloadLeft => Math.Max(0, downloaded.Total - downloaded.Done) / 1024;
+
+    public long DownloadTotal => downloaded.Total / 1024;
+
+    /// <summary>Asks GitHub for the latest release, and remembers it when it is newer than this launcher.</summary>
     public async Task CheckForUpdateAsync()
     {
         try
@@ -511,11 +669,140 @@ public sealed class MainViewModel : ObservableObject
             var latest = await Releases.LatestAsync(http);
             if (latest is not null && latest.Version > Releases.Current)
                 Update = latest;
+            else if (latest is not null)
+                updateChecked = true;
         }
         catch (Exception)
         {
             // Like the server's status this is only news: a failure leaves the banner hidden.
         }
+        Raise(nameof(VersionStateText));
+    }
+
+    // At start: the prompt comes up when a newer launcher is out, unless the game is running.
+    async Task OfferUpdateAsync()
+    {
+        await CheckForUpdateAsync();
+        if (update is not null && SelfUpdate.Offers(update, Releases.Current, running || await Task.Run(SelfUpdate.IsGameRunning)))
+            PromptShown = true;
+    }
+
+    /// <summary>The Settings page's button: looks for a new launcher, or updates to the one found.</summary>
+    public async Task CheckOrUpdateAsync()
+    {
+        if (update is not null)
+        {
+            await UpdateNowAsync();
+            return;
+        }
+        if (checkingUpdate)
+            return;
+        checkingUpdate = true;
+        Raise(nameof(UpdateButtonText), nameof(CanCheckUpdate));
+        try
+        {
+            await CheckForUpdateAsync();
+        }
+        finally
+        {
+            checkingUpdate = false;
+            Raise(nameof(UpdateButtonText), nameof(CanCheckUpdate));
+        }
+    }
+
+    /// <summary>"Not now", or closing the prompt after a failure: it stays down until the next start.</summary>
+    public void DismissPrompt()
+    {
+        if (updateStep == UpdateStep.Downloading)
+            return;
+        PromptShown = false;
+        UpdateStep = UpdateStep.Offer;
+    }
+
+    /// <summary>
+    /// Calls off the download of the new launcher, as the window closes: what came of it is
+    /// deleted, and the prompt says the update didn't finish.
+    /// </summary>
+    public void CancelUpdate() => updateCancel?.Cancel();
+
+    /// <summary>
+    /// Raised once the new launcher is in place and started: the window closes at once.
+    /// </summary>
+    public event Action? Restarting;
+
+    /// <summary>
+    /// Updates the launcher to the newer release, in the prompt with the LP meter counting the
+    /// download down. With no release to update to, the release page opens as before.
+    /// </summary>
+    public async Task UpdateNowAsync()
+    {
+        if (update is not { } release)
+        {
+            Open(UpdatePage);
+            return;
+        }
+        if (updateStep == UpdateStep.Downloading)
+            return;
+        PromptShown = true;
+        if (running)
+        {
+            Fail(UpdateOutcome.GameRunning, release);
+            return;
+        }
+        if (SelfUpdate.ForThisLauncher(http) is not { } self || !release.CanSelfUpdate)
+        {
+            Fail(UpdateOutcome.NotOffered, release);
+            return;
+        }
+        Downloaded = new UpdateProgress(0, release.Exe!.Size);
+        using var cancel = new CancellationTokenSource();
+        updateCancel = cancel;
+        UpdateStep = UpdateStep.Downloading;
+        UpdateOutcome outcome;
+        try
+        {
+            outcome = await self.UpdateAsync(release, new Progress<UpdateProgress>(step => Downloaded = step), cancel.Token);
+        }
+        catch (Exception)
+        {
+            // Whatever went wrong, the prompt must not be left stuck downloading: it says the
+            // update didn't finish, and Close takes it down.
+            outcome = UpdateOutcome.Unreachable;
+        }
+        finally
+        {
+            updateCancel = null;
+        }
+        if (outcome == UpdateOutcome.Restarting)
+        {
+            Restarting?.Invoke();
+            return;
+        }
+        Fail(outcome, release);
+    }
+
+    void Fail(UpdateOutcome outcome, LauncherRelease release)
+    {
+        updateFailure = outcome switch
+        {
+            UpdateOutcome.GameRunning => $"The game is running. Close it, then update to {release.Version}.",
+            UpdateOutcome.Unwritable => $"Windows won't let the launcher replace itself in its folder, so nothing was changed. Download {release.Version} from the release page instead.",
+            UpdateOutcome.Unreachable => $"GitHub could not be reached, so nothing was changed. Try again later, or download {release.Version} from the release page.",
+            UpdateOutcome.Refused => $"The download didn't match the release, so nothing was changed. Try again later, or download {release.Version} from the release page.",
+            UpdateOutcome.NotStarted => $"The new launcher would not start, so this one was kept. Download {release.Version} from the release page instead.",
+            _ => $"This release can't be installed from here. Download {release.Version} from the release page instead.",
+        };
+        UpdateStep = UpdateStep.Failed;
+        Raise(nameof(PromptText));
+    }
+
+    // A launcher started by its own update tidies up after the one it replaced.
+    async Task FinishUpdateAsync()
+    {
+        if (SelfUpdate.UpdatedFrom(Environment.GetCommandLineArgs()) is not { } old
+            || SelfUpdate.ForThisLauncher(http) is not { } self)
+            return;
+        UpdatedNote = await self.FinishAsync(old);
     }
 
     // --- The launcher itself -----------------------------------------------------------------

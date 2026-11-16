@@ -70,9 +70,18 @@ public class ServerInfoTests
         Assert.False(Info(""", "launcher": {"min": "0.2"}""")!.TooOld(new Version(0, 2, 0)));
 
     [Fact]
-    public void What_the_server_says_about_accounts_does_not_matter_to_it() =>
-        Assert.Equal(new ServerInfo(new Version(0, 2, 0)),
+    public void Of_what_the_server_says_about_accounts_only_sign_up_matters_to_it() =>
+        Assert.Equal(new ServerInfo(new Version(0, 2, 0), SignUpOpen: true),
                      Info(""", "registration": "open", "discord": {"enabled": true}, "email_signup": false, "launcher": {"min": "0.2.0"}"""));
+
+    [Theory]
+    [InlineData(""", "registration": "open" """, true)]
+    [InlineData(""", "registration": "closed" """, false)]
+    [InlineData(""", "registration": "soon" """, null)]
+    [InlineData(""", "registration": true""", null)]
+    [InlineData("", null)]
+    public void Sign_up_is_open_or_closed_as_the_registration_says(string registration, bool? open) =>
+        Assert.Equal(open, Info(registration)!.SignUpOpen);
 
     [Theory]
     [InlineData("""{"ok": false}""")]
