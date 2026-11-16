@@ -19,9 +19,13 @@ public static class SupportedClient
     /// replaced, the registry read from HKEY_CURRENT_USER, the updater's copy jumped over, a
     /// recordless card's activation accepted, the display wrapper loaded first, the card lists
     /// extended to the cards past Konami's release, with their procedures left out of the hand menu
-    /// where the server says they cannot be used, and the PE checksum written, 1039 bytes in all.
+    /// where the server says they cannot be used, the web links pointed at our website and the
+    /// star at its own page there, the lobbies a character may not enter listed faded, the
+    /// server's own titles named from the file the launcher writes, with .data reaching over what
+    /// that keeps, all of it reaching into the section .chaos, and the PE checksum written:
+    /// 3,330,048 bytes, of which 2109 differ, counting the section's against zeros.
     /// </summary>
-    public const string PublicSha256 = "9e4f9b6df32f16c73f76112614898e6bd82e00b2db4e266228566152eb501f01";
+    public const string PublicSha256 = "efcd0c1be5c174ae809af3dc0dd82775c3330f00bc13e38ba46e87f789988165";
 
     /// <summary>Whether the file at <paramref name="path"/> is the supported client.</summary>
     public static bool IsSupported(string path) =>

@@ -77,8 +77,9 @@ public static partial class ClientPatcher
     /// <summary>
     /// A copy of <paramref name="client"/> that connects to <paramref name="server"/>'s gate,
     /// keeps its saves where <see cref="Game.ClientKey"/> says, offers to activate the cards it
-    /// has no routines for, offers the effects and summons of the cards past Konami's release, and
-    /// loads a DirectDraw wrapper put beside it.
+    /// has no routines for, offers the effects and summons of the cards past Konami's release,
+    /// loads a DirectDraw wrapper put beside it, opens our website for its web links, lists the
+    /// lobbies a character may not enter, faded, and names the server's own titles.
     /// </summary>
     public static byte[] Patch(ReadOnlySpan<byte> client, ServerEndpoints server)
     {
@@ -87,9 +88,13 @@ public static partial class ClientPatcher
         SetGatePort(image, server.GatePort);
         SetRegistryRoot(image);
         SkipUpdaterCopy(image);
+        BuildChaosSection(image);
         AcceptRecordlessActivation(image);
         LoadWrapperFirst(image);
         ExtendCardLists(image);
+        PointWebLinks(image);
+        GreyLockedLobbies(image);
+        NameOwnTitles(image);
         // The retail file leaves its checksum at zero; the copy gets the right one, as a valid
         // image has.
         image.UpdateChecksum();

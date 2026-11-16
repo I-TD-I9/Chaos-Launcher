@@ -1,5 +1,6 @@
 using System.Net;
 using System.Security.Cryptography;
+using Chaos.Titles;
 
 namespace Chaos.Pictures;
 
@@ -41,7 +42,8 @@ public readonly record struct PicturesProgress(int Done, int Total);
 /// <remarks>
 /// A file whose copy in bc has the size and hash the manifest gives stays; a missing or different
 /// one is fetched, a few at a time, into a folder beside bc and checked there; and only once every
-/// file has come do they go into place and whatever else is in bc go. So when the network or the
+/// file has come do they go into place and whatever else is in bc go, but for the titles' names,
+/// which the launcher writes there itself (TitleNames). So when the network or the
 /// server fails halfway, or the time for it runs out, bc keeps the pictures it had, all of a
 /// piece, and the next Play only fetches what it is still missing. A file the server fails to
 /// give is asked for twice more before the update gives up on it, and a whole update gets no
@@ -253,6 +255,7 @@ public sealed class CardPictures(HttpClient http, Uri api, TimeProvider? clock =
             File.Copy(Path.Combine(staging, file.StoredName), target);
         }
         var listed = manifest.Files.Select(file => Path.GetFullPath(Local(folder, file))).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        listed.UnionWith(Kept(folder));
         Prune(new DirectoryInfo(folder), listed);
         if (Directory.Exists(staging))
         {
@@ -267,7 +270,7 @@ public sealed class CardPictures(HttpClient http, Uri api, TimeProvider? clock =
         RemoveLinks(folder);
         RemoveLinks(staging);
         if (Directory.Exists(folder))
-            Prune(new DirectoryInfo(folder), []);
+            Prune(new DirectoryInfo(folder), Kept(folder));
         if (Directory.Exists(staging))
         {
             Prune(new DirectoryInfo(staging), []);
@@ -275,6 +278,11 @@ public sealed class CardPictures(HttpClient http, Uri api, TimeProvider? clock =
         }
         return PicturesOutcome.None;
     }
+
+    // What the launcher writes into bc itself, which no update of the pictures takes away: the
+    // titles' names, which stay as they were when the server can't give them (TitleNames).
+    static HashSet<string> Kept(string folder) =>
+        new([Path.GetFullPath(Path.Combine(folder, TitleNames.FileName))], StringComparer.OrdinalIgnoreCase);
 
     // Takes away whatever under folder is not listed, and every link without following it: one
     // made after the update looked for them is still never gone into.

@@ -4,6 +4,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using Chaos.Pictures;
+using Chaos.Titles;
 
 namespace Chaos.Tests;
 
@@ -442,6 +443,23 @@ public sealed class CardPicturesTests : IDisposable
         Assert.Equal(PicturesOutcome.None, await Update());
         Assert.Empty(InBc());
         Assert.False(Directory.Exists(Staging));
+    }
+
+    // The titles' names are the launcher's own file in bc (TitleNames), which no update of the
+    // pictures takes away.
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task The_titles_names_stay(bool pictures)
+    {
+        Put(TitleNames.FileName, [1, 2, 3]);
+        Put("data/card/bc9999.jpg", [1]);
+        if (pictures)
+            Serve(Pack);
+        Assert.Equal(pictures ? PicturesOutcome.UpToDate : PicturesOutcome.None, await Update());
+        var expected = pictures ? new Dictionary<string, byte[]>(Pack) : [];
+        expected[TitleNames.FileName] = [1, 2, 3];
+        AssertSame(expected, InBc());
     }
 
     // Only a 404 says the server has no pictures: a page from something in between, a list cut

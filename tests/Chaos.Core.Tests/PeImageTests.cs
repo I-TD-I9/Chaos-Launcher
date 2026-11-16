@@ -28,11 +28,11 @@ public class PeImageTests
     public void Sections_are_found_by_name()
     {
         var image = new PeImage(TestImage.Build());
-        Assert.Equal(new PeImage.Section(".data", 0x5000, TestImage.DataRva, 0x1000, TestImage.DataRaw),
+        Assert.Equal(new PeImage.Section(".data", TestImage.DataVirtualSize, TestImage.DataRva, 0x1000, TestImage.DataRaw),
                      image.SectionNamed(".data"));
         Assert.Equal(new PeImage.Section(".text", TestImage.TextVirtualSize, TestImage.TextRva, 0x1000, TestImage.TextRaw),
                      image.SectionNamed(".text"));
-        Assert.Throws<PatchException>(() => image.SectionNamed(".rsrc"));
+        Assert.Throws<PatchException>(() => image.SectionNamed(".reloc"));
         Assert.Throws<PatchException>(() => image.SectionNamed(".TEXT"));
     }
 

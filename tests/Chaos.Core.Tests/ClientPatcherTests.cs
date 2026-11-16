@@ -37,6 +37,10 @@ public class ClientPatcherTests
         Assert.Equal(5730, PortIn(patched));
         static bool In(int i, int start, int count) => i >= start && i < start + count;
         var listSites = TestImage.ListSites.Select(site => (Start: TestImage.ListOffset(site.Va), Count: site.Bytes.Length)).ToArray();
+        var chaosSites = TestImage.ChaosSites.Select(site => (Start: TestImage.SiteOffset(site.Va), Count: site.Bytes.Length))
+            .Concat(TestImage.WebLinks.Select(link => (Start: TestImage.SiteOffset(link.Va), Count: link.Url.Length + 1))).ToArray();
+        int optional = TestImage.OptionalHeader;
+        Assert.Equal(retail.Length + TestImage.ChaosLength, patched.Length);
         for (int i = 0; i < retail.Length; i++)
         {
             bool slot = In(i, TestImage.HostOffset, 32);
@@ -45,12 +49,17 @@ public class ClientPatcherTests
             bool activation = i == TestImage.ActivationOffset + 2;
             bool call = In(i, TestImage.DirectDrawOffset, 6);
             bool stub = In(i, TestImage.StubOffset, Stub.Length);
-            bool size = In(i, TestImage.TextVirtualSizeOffset, 4);
+            bool size = In(i, TestImage.TextVirtualSizeOffset, 4) || In(i, TestImage.DataVirtualSizeOffset, 4);
             bool lists = listSites.Any(site => In(i, site.Start, site.Count));
+            bool chaos = chaosSites.Any(site => In(i, site.Start, site.Count));
             bool cave = In(i, TestImage.CardCaveOffset, TestImage.CardCaveLength);
             bool held = In(i, TestImage.ProcHeldOffset, TestImage.ProcHeldLength);
             bool checksum = In(i, TestImage.ChecksumOffset, 4);
-            if (!slot && !root && !jump && !activation && !call && !stub && !size && !lists && !cave && !held && !checksum)
+            // The section's header, and NumberOfSections, SizeOfCode and SizeOfImage.
+            bool header = In(i, TestImage.NextSectionHeader, 40) || In(i, TestImage.PeOffset + 6, 2) ||
+                          In(i, optional + 4, 4) || In(i, optional + 56, 4);
+            if (!slot && !root && !jump && !activation && !call && !stub && !size && !lists && !chaos && !cave && !held &&
+                !checksum && !header)
                 Assert.True(retail[i] == patched[i], $"byte 0x{i:x} changed");
         }
         Assert.Equal(TestImage.ReferenceChecksum(patched, TestImage.ChecksumOffset),
@@ -270,7 +279,10 @@ public class ClientPatcherTests
         Assert.Equal(SupportedClient.Sha256, SupportedClient.HashOf(retail));
         var patched = ClientPatcher.Patch(retail, ServerEndpoints.Public);
         Assert.Equal(SupportedClient.PublicSha256, SupportedClient.HashOf(patched));
-        Assert.Equal(1039, retail.Zip(patched).Count(pair => pair.First != pair.Second));
+        Assert.Equal(3_313_664, retail.Length);
+        Assert.Equal(3_330_048, patched.Length);
+        // The bytes that differ, .chaos's counted against zeros.
+        Assert.Equal(2109, patched.Where((b, i) => b != (i < retail.Length ? retail[i] : 0)).Count());
         Assert.Equal(patched, ClientPatcher.Patch(patched, ServerEndpoints.Public));
     }
 

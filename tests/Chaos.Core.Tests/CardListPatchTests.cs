@@ -279,11 +279,20 @@ public class CardListPatchTests
             (original.Offset(StubVa, TestImage.CardCaveLength), TestImage.CardCaveLength),
             (original.Offset(TestImage.ProcHeldVa, TestImage.ProcHeldLength), TestImage.ProcHeldLength),
             (original.ChecksumOffset, 4),
-            // .text's size in its section header.
+            // .text's and .data's sizes in their section headers.
             (retail.AsSpan(0, 0x400).IndexOf(".text"u8) + 8, 4),
+            (retail.AsSpan(0, 0x400).IndexOf(".data"u8) + 8, 4),
+            // .chaos's header after .rsrc's, and NumberOfSections, SizeOfCode and SizeOfImage.
+            (retail.AsSpan(0, 0x400).IndexOf(".rsrc"u8) + 40, 40),
+            (BinaryPrimitives.ReadInt32LittleEndian(retail.AsSpan(0x3C)) + 6, 2),
+            (BinaryPrimitives.ReadInt32LittleEndian(retail.AsSpan(0x3C)) + 24 + 4, 4),
+            (BinaryPrimitives.ReadInt32LittleEndian(retail.AsSpan(0x3C)) + 24 + 56, 4),
         };
-        foreach (var (place, bytes) in TestImage.ListSites)
+        foreach (var (place, bytes) in TestImage.ListSites.Concat(TestImage.ChaosSites))
             allowed.Add((original.Offset(place, bytes.Length), bytes.Length));
+        foreach (var (place, url) in TestImage.WebLinks)
+            allowed.Add((original.Offset(place, url.Length + 1), url.Length + 1));
+        Assert.Equal(retail.Length + 0x4000, patched.Bytes.Length);
         for (int i = 0; i < retail.Length; i++)
             if (retail[i] != patched.Bytes[i])
                 Assert.True(allowed.Any(a => i >= a.Start && i < a.Start + a.Count), $"byte 0x{i:x} changed");
