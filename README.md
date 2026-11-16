@@ -36,7 +36,7 @@
 5. Click **Play** and log in with your new account.
 
 <p align="center">
-  <img src="docs/launcher.gif" width="720" alt="The launcher with the game folder picked, then an account made with a code from an email, then Play">
+  <img src="docs/launcher.gif" width="720" alt="The launcher's Play, Account and Settings pages, then Play: the card pictures come in as the Life Points count down, and the game starts">
 </p>
 
 ## Good to know
@@ -51,6 +51,8 @@
 - Some cards the game knows have no picture of their own. The launcher fetches pictures for them
   from the server when you press **Play**, so the first time can take a moment. On a slow
   connection the game won't wait for all of them: the rest come the next time you play.
+- When there's a new version of the launcher, it asks to update itself when it starts.
+  **Check for updates** under **Settings** looks for one any time.
 
 <p align="center"><b>See you in Battle City!</b></p>
 
