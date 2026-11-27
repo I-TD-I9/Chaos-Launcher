@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- The launcher's non-UI code. -->
+  <PropertyGroup>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <RootNamespace>Chaos</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Chaos.Core.Tests" />
+  </ItemGroup>
+
+  <Import Project="CncDdraw.targets" />
+
+</Project>
