@@ -3,6 +3,7 @@ using System.Net;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
+using Chaos.Game;
 using Chaos.Pictures;
 using Chaos.Titles;
 
@@ -160,7 +161,7 @@ public sealed class CardPicturesTests : IDisposable
     }
 
     // mklink /J or /H, which need no admin rights.
-    static void Link(string kind, string link, string target)
+    internal static void Link(string kind, string link, string target)
     {
         using var mklink = Process.Start(new ProcessStartInfo("cmd.exe", $"/c mklink {kind} \"{link}\" \"{target}\"")
         {
@@ -451,6 +452,23 @@ public sealed class CardPicturesTests : IDisposable
         Assert.Equal(pictures ? PicturesOutcome.UpToDate : PicturesOutcome.None, await Update());
         var expected = pictures ? new Dictionary<string, byte[]>(Pack) : [];
         expected[TitleNames.FileName] = [1, 2, 3];
+        AssertSame(expected, ReadBc());
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task KeepsCardNames(bool pictures)
+    {
+        foreach (var entry in CardNames.Entries)
+            Put(entry, [1, 2, 3]);
+        Put("data/card/bc9999.jpg", [1]);
+        if (pictures)
+            Serve(Pack);
+        Assert.Equal(pictures ? PicturesOutcome.UpToDate : PicturesOutcome.None, await Update());
+        var expected = pictures ? new Dictionary<string, byte[]>(Pack) : [];
+        foreach (var entry in CardNames.Entries)
+            expected[entry.Replace('\\', '/')] = [1, 2, 3];
         AssertSame(expected, ReadBc());
     }
 

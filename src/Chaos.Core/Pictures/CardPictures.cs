@@ -1,5 +1,6 @@
 using System.Net;
 using System.Security.Cryptography;
+using Chaos.Game;
 using Chaos.Titles;
 
 namespace Chaos.Pictures;
@@ -235,7 +236,9 @@ public sealed class CardPictures(HttpClient http, Uri api, TimeProvider? clock =
     }
 
     static HashSet<string> KeptFiles(string folder) =>
-        new([Path.GetFullPath(Path.Combine(folder, TitleNames.FileName))], StringComparer.OrdinalIgnoreCase);
+        new([Path.GetFullPath(Path.Combine(folder, TitleNames.FileName)),
+             .. CardNames.Entries.Select(entry => Path.GetFullPath(Path.Combine(folder, entry)))],
+            StringComparer.OrdinalIgnoreCase);
 
     internal static void Prune(DirectoryInfo folder, HashSet<string> listed)
     {

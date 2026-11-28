@@ -322,6 +322,7 @@ public sealed class MainViewModel : ObservableObject
         };
         var reply = await fetchingTitles;
         await Task.Run(() => TitleNames.Write(bc, reply));
+        await Task.Run(() => CardNames.Write(bc, current.Path));
         return start;
     }
 
