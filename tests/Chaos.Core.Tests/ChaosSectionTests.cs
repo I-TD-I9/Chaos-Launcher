@@ -48,8 +48,9 @@ public class ChaosSectionTests
             (0x900, ClientPatcher.EventLobbyStub.ToArray()),
             (0xA00, ClientPatcher.OwnTitlesStub.ToArray()),
             (0xC00, ClientPatcher.StarPage.ToArray()),
+            (0xC40, ClientPatcher.ClosedPlateStub.ToArray()),
         ];
-        Assert.Equal([135, 28, 27, 101, 242, 28], pieces.Select(piece => piece.Bytes.Length));
+        Assert.Equal([135, 28, 27, 101, 242, 28, 193], pieces.Select(piece => piece.Bytes.Length));
         var written = new bool[contents.Length];
         foreach (var (at, bytes) in pieces)
         {
@@ -85,6 +86,7 @@ public class ChaosSectionTests
     [InlineData(0x810)]
     [InlineData(0xA40)]
     [InlineData(0xC05)]
+    [InlineData(0xC90)]
     [InlineData(0x3FFF)]
     public void RewritesWholeSection(int at)
     {

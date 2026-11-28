@@ -277,7 +277,7 @@ public class ClientPatcherTests
         Assert.Equal(3_313_664, retail.Length);
         Assert.Equal(3_330_048, patched.Length);
         // Changed bytes, with .chaos compared to zeros.
-        Assert.Equal(2221, patched.Where((b, i) => b != (i < retail.Length ? retail[i] : 0)).Count());
+        Assert.Equal(2365, patched.Where((b, i) => b != (i < retail.Length ? retail[i] : 0)).Count());
         Assert.Equal(patched, ClientPatcher.Patch(patched, ServerEndpoints.Public));
     }
 

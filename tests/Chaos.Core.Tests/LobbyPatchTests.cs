@@ -26,6 +26,18 @@ public class LobbyPatchTests
     const uint Number = 0xB98890, Region = 0xB988B0;
     const uint Rank8 = 0xB98900, Trial = 0xB9892F, Championship = 0xB9894A;
 
+    static readonly byte[] PlateBytes = Hex("""
+        00000000 00000000 31000000 38000000 0e010000 00000000 98020000 38000000
+        31000000 00000000 0e010000 07000000 31000000 31000000 0e010000 38000000
+        807e2c00 7538 53 bb408cb900 6a006a00 53 ff742420 8b442420 034304 50 8b442420 0303 50 ff742420
+        8bcf8b17 ff5218 83c310 81fb808cb900 72d2 5b c21c00 8bcf8b17 ff6220
+        807e2c00 7512 0fb686c0010000 0b86c2010000 7403 c21c00 8bcf8b17 ff6218
+        6828a97100 807d3100 7407 c70424fb8cb900 e98f9facff
+        2563202563 00
+        """);
+
+    const uint Plate = 0xB98C40, Body = 0xB98C80, Caption = 0xB98CC5, Label = 0xB98CE4, LabelFormat = 0xB98CFB;
+
     // Branches, decoded from the listing.
     static readonly (uint Address, int Length, uint Target)[] Branches =
     [
@@ -58,12 +70,19 @@ public class LobbyPatchTests
         (0xB9894E, 6, 0x69F99C),
         (0xB9895A, 6, 0x69F99C),
         (0xB98960, 5, 0x69F995),
+        (0xB98C84, 2, 0xB98CBE),
+        (0xB98CB8, 2, 0xB98C8C),    // the next piece
+        (0xB98CC9, 2, 0xB98CDD),
+        (0xB98CD8, 2, 0xB98CDD),
+        (0xB98CED, 2, 0xB98CF6),
+        (0xB98CF6, 5, 0x662C8A),    // back into the fill
     ];
 
     static byte[] PatchedImage() => ClientPatcher.Patch(TestImage.Build(), ServerEndpoints.Public);
 
     static byte[] Code(uint address) => address switch
     {
+        >= Plate => PlateBytes,
         >= Rank8 => EventBytes,
         >= Region => RegionBytes,
         >= Number => NumberBytes,
@@ -71,7 +90,7 @@ public class LobbyPatchTests
     };
 
     static uint Base(uint address) =>
-        address >= Rank8 ? Rank8 : address >= Region ? Region : address >= Number ? Number : Rank1;
+        address >= Plate ? Plate : address >= Rank8 ? Rank8 : address >= Region ? Region : address >= Number ? Number : Rank1;
 
     [Fact]
     public void RoutinesMatchListing()
@@ -115,6 +134,32 @@ public class LobbyPatchTests
         Assert.Equal(1000, BinaryPrimitives.ReadUInt16LittleEndian(RegionBytes.AsSpan(14)));
         // A faded plate is drawn at 0x60.
         Assert.Equal(0x60, BinaryPrimitives.ReadInt32LittleEndian(RoutineBytes.AsSpan(0x7E)));
+    }
+
+    [Fact]
+    public void PlateRoutinesMatchListing()
+    {
+        Assert.Equal(193, PlateBytes.Length);
+        Assert.Equal(Convert.ToHexStringLower(PlateBytes), Convert.ToHexStringLower(ClientPatcher.ClosedPlateStub));
+        Assert.Equal(Plate, ClientPatcher.ClosedPlateVa);
+        // After the star page, inside .chaos.
+        Assert.True(ClientPatcher.StarPageVa + (uint)ClientPatcher.StarPage.Length <= Plate);
+        Assert.True(Plate + PlateBytes.Length <= 0xB99000);
+        // The plate in four pieces around the caption.
+        int[] rects = Enumerable.Range(0, 16).Select(i => BinaryPrimitives.ReadInt32LittleEndian(PlateBytes.AsSpan(i * 4))).ToArray();
+        Assert.Equal([0, 0, 49, 56, 270, 0, 664, 56, 49, 0, 270, 7, 49, 49, 270, 56], rects);
+        Assert.Equal(Plate, BinaryPrimitives.ReadUInt32LittleEndian(PlateBytes.AsSpan(0x48)));
+        Assert.Equal(Body, BinaryPrimitives.ReadUInt32LittleEndian(PlateBytes.AsSpan(0x74)));
+        Assert.Equal(Body, Plate + 0x40);
+        Assert.Equal(Caption, Plate + 0x85);
+        Assert.Equal(Label, Plate + 0xA4);
+        Assert.Equal(LabelFormat, Plate + 0xBB);
+        // The open plate gets the client's own calls.
+        Assert.Equal(Hex("8bcf8b17 ff6220"), PlateBytes[0x7E..0x85]);
+        Assert.Equal(Hex("8bcf8b17 ff6218"), PlateBytes[0x9D..0xA4]);
+        Assert.Equal(Hex("6828a97100"), PlateBytes[0xA4..0xA9]);
+        Assert.Equal(LabelFormat, BinaryPrimitives.ReadUInt32LittleEndian(PlateBytes.AsSpan(0xB2)));
+        Assert.Equal("%c %c\0"u8.ToArray(), PlateBytes[0xBB..]);
     }
 
     [Fact]
@@ -174,9 +219,22 @@ public class LobbyPatchTests
         Assert.Equal(Site(0x69F8B2).Original[..4], RegionBytes[..4]);
         Assert.Equal(Site(0x69F8F7).Original[..4], EventBytes[0x2F..0x33]);
         Assert.Equal(Site(0x69F98F).Original[..4], EventBytes[0x4A..0x4E]);
+        // Closed plate draw.
+        Assert.Equal([0x50, 0xE8], Site(0x662558).Patched[..2]);
+        Assert.Equal(Body, 0x66255E + (uint)BinaryPrimitives.ReadInt32LittleEndian(Site(0x662558).Patched.AsSpan(2)));
+        Assert.Equal(0xE8, Site(0x6625F6).Patched[0]);
+        Assert.Equal(Caption, Relative(Site(0x6625F6)));
+        Assert.Equal(0xE9, Site(0x662C85).Patched[0]);
+        Assert.Equal(Label, Relative(Site(0x662C85)));
+        // Open plates rerun the calls they replace.
+        Assert.Equal(Site(0x662558).Original[..2], PlateBytes[0x7E..0x80]);
+        Assert.Equal(Site(0x662558).Original[^1], PlateBytes[0x84]);
+        Assert.Equal(Site(0x6625F6).Original[..2], PlateBytes[0x9D..0x9F]);
+        Assert.Equal(Site(0x6625F6).Original[^1], PlateBytes[0xA3]);
+        Assert.Equal(Site(0x662C85).Original, PlateBytes[0xA4..0xA9]);
         foreach (var site in ClientPatcher.LobbySites)
             Assert.Equal(site.Original.Length, site.Patched.Length);
-        Assert.Equal(12, ClientPatcher.LobbySites.Length);
+        Assert.Equal(15, ClientPatcher.LobbySites.Length);
     }
 
     [Fact]
@@ -189,6 +247,7 @@ public class LobbyPatchTests
         Assert.Equal(NumberBytes, patched.AsSpan(TestImage.ChaosOffset(Number), NumberBytes.Length).ToArray());
         Assert.Equal(RegionBytes, patched.AsSpan(TestImage.ChaosOffset(Region), RegionBytes.Length).ToArray());
         Assert.Equal(EventBytes, patched.AsSpan(TestImage.ChaosOffset(Rank8), EventBytes.Length).ToArray());
+        Assert.Equal(PlateBytes, patched.AsSpan(TestImage.ChaosOffset(Plate), PlateBytes.Length).ToArray());
         Assert.Equal(0, patched[TestImage.ChaosOffset(ClientPatcher.EmptyStringVa)]);
         Assert.Equal(Rank8, BinaryPrimitives.ReadUInt32LittleEndian(patched.AsSpan(TestImage.SiteOffset(0x663004))));
         Assert.Equal(Rank7, BinaryPrimitives.ReadUInt32LittleEndian(patched.AsSpan(TestImage.SiteOffset(0x663008))));
@@ -213,6 +272,9 @@ public class LobbyPatchTests
         { 0x69F8B2, 5 },
         { 0x69F8F7, 3 },
         { 0x69F98F, 4 },
+        { 0x662558, 2 },
+        { 0x6625F6, 4 },
+        { 0x662C85, 1 },
     };
 
     [Theory]
@@ -231,7 +293,8 @@ public class LobbyPatchTests
     public void NoSitesWithoutRoutines()
     {
         Assert.Throws<PatchException>(() => ClientPatcher.GreyLockedLobbies(new PeImage(TestImage.Build())));
-        foreach (uint va in new[] { Rank1 + 0x40, Number + 3, ClientPatcher.EmptyStringVa, Region + 26, Rank8 + 0x23, Trial + 3, Championship + 26 })
+        foreach (uint va in new[] { Rank1 + 0x40, Number + 3, ClientPatcher.EmptyStringVa, Region + 26, Rank8 + 0x23, Trial + 3, Championship + 26,
+                                    Plate + 0x20, Body + 0x2C, Caption + 0x10, LabelFormat + 5 })
         {
             var image = new PeImage(TestImage.Build());
             ClientPatcher.BuildChaosSection(image);
@@ -253,9 +316,15 @@ public class LobbyPatchTests
         Assert.Equal(NumberBytes, patched.Read(Number, NumberBytes.Length).ToArray());
         Assert.Equal(RegionBytes, patched.Read(Region, RegionBytes.Length).ToArray());
         Assert.Equal(EventBytes, patched.Read(Rank8, EventBytes.Length).ToArray());
+        Assert.Equal(PlateBytes, patched.Read(Plate, PlateBytes.Length).ToArray());
         Assert.Equal(0, patched.Read(ClientPatcher.EmptyStringVa, 1)[0]);
-        // Open plates keep the "% 5d" format.
+        // Open plates keep the "% 5d" and "%d %c" formats.
         Assert.Equal("% 5d\0"u8.ToArray(), patched.Read(0x71A920, 5).ToArray());
+        Assert.Equal("%d %c\0"u8.ToArray(), patched.Read(0x71A928, 6).ToArray());
+        // The code after the plate sites.
+        Assert.Equal(Hex("8d0c9b"), retail.Read(0x66255E, 3).ToArray());
+        Assert.Equal(Hex("8b563c"), retail.Read(0x6625FB, 3).ToArray());
+        Assert.Equal(Hex("50 e84b0e0600"), retail.Read(0x662C8A, 6).ToArray());
         Assert.Equal(Hex("6681bfca00000001f0 740d 83fe02 7c12 8b442410 85c0 7c0a"), retail.Read(0x662F97, 24).ToArray());
         // Return targets.
         Assert.Equal(0x51, retail.Read(0x662FAF, 1)[0]);

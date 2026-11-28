@@ -40,6 +40,7 @@ public static partial class ClientPatcher
         EventLobbyStub.CopyTo(contents.AsSpan((int)(EventLobbyVa - ChaosVa)));
         OwnTitlesStub.CopyTo(contents.AsSpan((int)(OwnTitleNameVa - ChaosVa)));
         StarPage.CopyTo(contents.AsSpan((int)(StarPageVa - ChaosVa)));
+        ClosedPlateStub.CopyTo(contents.AsSpan((int)(ClosedPlateVa - ChaosVa)));
         return contents;
     }
 
